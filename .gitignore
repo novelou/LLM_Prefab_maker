@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.local/
+test-results/
+playwright-report/
+*.log
+release/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.qmodel
+*.glb
+Thumbs.db
+.DS_Store

@@ -1,0 +1,1483 @@
+{
+  "date": "2026-09-10",
+  "selectedPrompt": "v2",
+  "method": "Agent review of saved renders; source support for naturally hidden parts. No blinded assessment. Internal endpoint, credentials and raw assets omitted.",
+  "stages": [
+    {
+      "stage": "v1",
+      "status": "Complete",
+      "systemPromptSha256": "8825501123190bbb815b8ec4452ac1bddd70f40a7d4db63bda2b410c62ccd5ca",
+      "runtimeSha256": "17d69863c0163cecaa87d16684aaae944e81e4353d6c6c269fda95a4c6b9012d",
+      "settings": {},
+      "rows": [
+        {
+          "key": "chair-1",
+          "name": "chair",
+          "prompt": "木製の椅子。4本の脚、四角い座面、背もたれに3本の縦桟。座面の高さ0.45m。自然な茶色。",
+          "criteria": [
+            "4本脚",
+            "四角い座面",
+            "縦桟3本の背もたれ",
+            "茶色の木部"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 35293,
+          "elapsedMs": 36493,
+          "tokens": 4022,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "4本脚、四角い座面、縦桟3本、茶色の木部を確認。"
+          }
+        },
+        {
+          "key": "chair-2",
+          "name": "chair",
+          "prompt": "木製の椅子。4本の脚、四角い座面、背もたれに3本の縦桟。座面の高さ0.45m。自然な茶色。",
+          "criteria": [
+            "4本脚",
+            "四角い座面",
+            "縦桟3本の背もたれ",
+            "茶色の木部"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 58503,
+          "elapsedMs": 59513,
+          "tokens": 6308,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "正面で縦桟3本、前後の脚、座面、茶色の木部を確認。"
+          }
+        },
+        {
+          "key": "chair-3",
+          "name": "chair",
+          "prompt": "木製の椅子。4本の脚、四角い座面、背もたれに3本の縦桟。座面の高さ0.45m。自然な茶色。",
+          "criteria": [
+            "4本脚",
+            "四角い座面",
+            "縦桟3本の背もたれ",
+            "茶色の木部"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 36767,
+          "elapsedMs": 37983,
+          "tokens": 4166,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "4本脚、縦桟3本、木目のある四角い座面。木色は明るいベージュ寄り。"
+          }
+        },
+        {
+          "key": "table-1",
+          "name": "table",
+          "prompt": "木製の机。幅1.2m、奥行き0.6m、高さ0.75m。長方形の天板、4本脚、前面右側に引き出しと取っ手。",
+          "criteria": [
+            "長方形の天板",
+            "4本脚",
+            "前面右の引き出しと取っ手",
+            "木製の色"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 44671,
+          "elapsedMs": 45941,
+          "tokens": 4916,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "長方形天板、4本脚、前面右の引き出しと取っ手、茶色の木部を確認。"
+          }
+        },
+        {
+          "key": "table-2",
+          "name": "table",
+          "prompt": "木製の机。幅1.2m、奥行き0.6m、高さ0.75m。長方形の天板、4本脚、前面右側に引き出しと取っ手。",
+          "criteria": [
+            "長方形の天板",
+            "4本脚",
+            "前面右の引き出しと取っ手",
+            "木製の色"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 46459,
+          "elapsedMs": 47668,
+          "tokens": 5118,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要条件は充足。ただし後方の補強材が脚につながらず横にはみ出す。実用素材にする前に修正が必要。"
+          }
+        },
+        {
+          "key": "table-3",
+          "name": "table",
+          "prompt": "木製の机。幅1.2m、奥行き0.6m、高さ0.75m。長方形の天板、4本脚、前面右側に引き出しと取っ手。",
+          "criteria": [
+            "長方形の天板",
+            "4本脚",
+            "前面右の引き出しと取っ手",
+            "木製の色"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 91592,
+          "elapsedMs": 92716,
+          "tokens": 9505,
+          "review": {
+            "pass": false,
+            "checks": [
+              true,
+              true,
+              true,
+              false
+            ],
+            "note": "形状と引き出しは適合するが、プレビューが白く木材の色・木目がほぼ認識できない。ソースには木目テクスチャの生成があるものの、見た目の条件は未充足として扱う。"
+          }
+        },
+        {
+          "key": "house-1",
+          "name": "house",
+          "prompt": "ローポリの家。白い壁、赤い切妻屋根、前面の茶色いドアと青い窓2つ、煙突。幅4m、奥行き3m。",
+          "criteria": [
+            "白い壁",
+            "赤い切妻屋根",
+            "前面ドアと青い窓2つ",
+            "煙突"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 91542,
+          "elapsedMs": 92632,
+          "tokens": 9488,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "白壁、赤い切妻屋根、茶色ドア、青窓2つ、煙突。依頼外の大きい芝生台座も生成され、総寸法に含まれる。"
+          }
+        },
+        {
+          "key": "house-2",
+          "name": "house",
+          "prompt": "ローポリの家。白い壁、赤い切妻屋根、前面の茶色いドアと青い窓2つ、煙突。幅4m、奥行き3m。",
+          "criteria": [
+            "白い壁",
+            "赤い切妻屋根",
+            "前面ドアと青い窓2つ",
+            "煙突"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 39806,
+          "elapsedMs": 40809,
+          "tokens": 4455,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要条件を充足。屋根はソースでも三角柱を確認。依頼外の地面があり、表示総寸法は8m四方になる。"
+          }
+        },
+        {
+          "key": "house-3",
+          "name": "house",
+          "prompt": "ローポリの家。白い壁、赤い切妻屋根、前面の茶色いドアと青い窓2つ、煙突。幅4m、奥行き3m。",
+          "criteria": [
+            "白い壁",
+            "赤い切妻屋根",
+            "前面ドアと青い窓2つ",
+            "煙突"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 56870,
+          "elapsedMs": 57830,
+          "tokens": 6133,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要な壁・屋根・前面ドアと窓・煙突を確認。屋根の張り出しと階段により総寸法は建物本体寸法より大きい。"
+          }
+        },
+        {
+          "key": "tower-1",
+          "name": "tower",
+          "prompt": "石造りの円形の見張り塔。高さ5m、直径2m。灰色の円筒形本体、頂上の胸壁、縦長の窓3つ、地上のアーチ型入口。",
+          "criteria": [
+            "灰色の円筒形塔",
+            "頂上の胸壁",
+            "縦長の窓",
+            "地上入口"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 61130,
+          "elapsedMs": 62137,
+          "tokens": 6557,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "灰色の円筒本体、胸壁、縦長窓、アーチ入口。窓3つの周方向配置をソースでも確認。開口は黒い面による表現で、通り抜け可能な穴ではない。"
+          }
+        },
+        {
+          "key": "tower-2",
+          "name": "tower",
+          "prompt": "石造りの円形の見張り塔。高さ5m、直径2m。灰色の円筒形本体、頂上の胸壁、縦長の窓3つ、地上のアーチ型入口。",
+          "criteria": [
+            "灰色の円筒形塔",
+            "頂上の胸壁",
+            "縦長の窓",
+            "地上入口"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 59415,
+          "elapsedMs": 60427,
+          "tokens": 6389,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "円筒本体・胸壁・窓・アーチ入口を確認。台座と小石が追加されている。"
+          }
+        },
+        {
+          "key": "tower-3",
+          "name": "tower",
+          "prompt": "石造りの円形の見張り塔。高さ5m、直径2m。灰色の円筒形本体、頂上の胸壁、縦長の窓3つ、地上のアーチ型入口。",
+          "criteria": [
+            "灰色の円筒形塔",
+            "頂上の胸壁",
+            "縦長の窓",
+            "地上入口"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 47963,
+          "elapsedMs": 48975,
+          "tokens": 5263,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要な4条件を確認。窓3つは120度間隔の配置をソースでも確認。地面が生成されている。"
+          }
+        },
+        {
+          "key": "robot-1",
+          "name": "robot",
+          "prompt": "かわいいローポリのロボット小物。高さ0.5m。青い箱型の胴、頭に黄色い目2つ、左右の腕、2本脚、頭上にアンテナ。",
+          "criteria": [
+            "青い箱型胴",
+            "黄色い目2つ",
+            "左右の腕と2本脚",
+            "アンテナ"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 47320,
+          "elapsedMs": 48282,
+          "tokens": 5197,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "青い箱型胴、黄色い目2つ、両腕と2本脚、アンテナを目視確認。"
+          }
+        },
+        {
+          "key": "robot-2",
+          "name": "robot",
+          "prompt": "かわいいローポリのロボット小物。高さ0.5m。青い箱型の胴、頭に黄色い目2つ、左右の腕、2本脚、頭上にアンテナ。",
+          "criteria": [
+            "青い箱型胴",
+            "黄色い目2つ",
+            "左右の腕と2本脚",
+            "アンテナ"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 45020,
+          "elapsedMs": 46033,
+          "tokens": 4971,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "青い箱型胴、黄色い目2つ、両腕と2本脚、アンテナを目視確認。"
+          }
+        },
+        {
+          "key": "robot-3",
+          "name": "robot",
+          "prompt": "かわいいローポリのロボット小物。高さ0.5m。青い箱型の胴、頭に黄色い目2つ、左右の腕、2本脚、頭上にアンテナ。",
+          "criteria": [
+            "青い箱型胴",
+            "黄色い目2つ",
+            "左右の腕と2本脚",
+            "アンテナ"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 55044,
+          "elapsedMs": 56022,
+          "tokens": 5956,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "指定の4条件を目視確認。目に加えて頬や胸パネルの装飾がある。"
+          }
+        },
+        {
+          "key": "car-1",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 48664,
+          "elapsedMs": 49696,
+          "tokens": 5323,
+          "review": {
+            "pass": false,
+            "checks": [
+              true,
+              true,
+              false,
+              true
+            ],
+            "note": "赤い車体と4輪、前後灯はあるが、フロントガラスが車室に埋まって正面から見えない。車の正面も+Xになり、契約の+Zと不一致。"
+          }
+        },
+        {
+          "key": "car-2",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 41658,
+          "elapsedMs": 42611,
+          "tokens": 4634,
+          "review": {
+            "pass": false,
+            "checks": [
+              true,
+              true,
+              false,
+              true
+            ],
+            "note": "フロントガラスが不透明な車室内部に置かれ、正面が赤いまま。青い側面窓だけではフロントガラスの条件を満たさない。"
+          }
+        },
+        {
+          "key": "car-3",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 48387,
+          "elapsedMs": 49413,
+          "tokens": 5296,
+          "review": {
+            "pass": false,
+            "checks": [
+              true,
+              true,
+              false,
+              true
+            ],
+            "note": "斜めでは青い面が一部見えるが、正面からは車室面との重なりで赤くなり、正常な青いフロントガラスになっていない。"
+          }
+        },
+        {
+          "key": "lamp-1",
+          "name": "lamp",
+          "prompt": "卓上ランプ。全高0.5m。真鍮色の丸いベースと細い支柱、緑のドーム型シェード、その内側の暖色電球。",
+          "criteria": [
+            "真鍮色の丸いベース",
+            "細い支柱",
+            "緑のドーム型シェード",
+            "内側の暖色電球"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 40215,
+          "elapsedMs": 41372,
+          "tokens": 4498,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "真鍮色の丸いベース、細い支柱、緑ドームを確認。通常視点では隠れる電球は内部の暖色emissive Sphereとしてソースで補助確認。"
+          }
+        },
+        {
+          "key": "lamp-2",
+          "name": "lamp",
+          "prompt": "卓上ランプ。全高0.5m。真鍮色の丸いベースと細い支柱、緑のドーム型シェード、その内側の暖色電球。",
+          "criteria": [
+            "真鍮色の丸いベース",
+            "細い支柱",
+            "緑のドーム型シェード",
+            "内側の暖色電球"
+          ],
+          "seed": 43,
+          "firstValid": false,
+          "success": false,
+          "attempts": 1,
+          "apiMs": null,
+          "elapsedMs": 39204,
+          "tokens": null,
+          "review": {
+            "pass": false,
+            "checks": [
+              false,
+              false,
+              false,
+              false
+            ],
+            "note": "createModelエントリーポイントを検出できず実行しなかった。baselineではこの形式エラーに自動修復が適用されなかった。"
+          }
+        },
+        {
+          "key": "lamp-3",
+          "name": "lamp",
+          "prompt": "卓上ランプ。全高0.5m。真鍮色の丸いベースと細い支柱、緑のドーム型シェード、その内側の暖色電球。",
+          "criteria": [
+            "真鍮色の丸いベース",
+            "細い支柱",
+            "緑のドーム型シェード",
+            "内側の暖色電球"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 53765,
+          "elapsedMs": 54958,
+          "tokens": 5831,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "ベース、支柱、緑ドームを確認。内部の電球はソース上の暖色emissive Sphereと配置で補助確認。"
+          }
+        },
+        {
+          "key": "vase-1",
+          "name": "vase",
+          "prompt": "陶器の花瓶。高さ0.3m。クリーム色、丸く膨らんだ胴、細い首、上部に開いた口と縁、内側の空洞。回転体で滑らかに。",
+          "criteria": [
+            "クリーム色",
+            "膨らんだ胴と細い首",
+            "開口部と縁",
+            "空洞"
+          ],
+          "seed": 42,
+          "firstValid": false,
+          "success": true,
+          "attempts": 2,
+          "apiMs": 85185,
+          "elapsedMs": 86339,
+          "tokens": 12063,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "document参照エラーを1回修復。クリーム色、膨らむ胴、首と縁。回転断面が外壁から縁を経て内壁と底へ戻り、空洞を持つことをソースでも確認。"
+          }
+        },
+        {
+          "key": "vase-2",
+          "name": "vase",
+          "prompt": "陶器の花瓶。高さ0.3m。クリーム色、丸く膨らんだ胴、細い首、上部に開いた口と縁、内側の空洞。回転体で滑らかに。",
+          "criteria": [
+            "クリーム色",
+            "膨らんだ胴と細い首",
+            "開口部と縁",
+            "空洞"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 36437,
+          "elapsedMs": 37446,
+          "tokens": 4131,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要形状を確認。LatheGeometryの断面に内壁と底があり、口を円盤で塞いでいないことを補助確認。"
+          }
+        },
+        {
+          "key": "vase-3",
+          "name": "vase",
+          "prompt": "陶器の花瓶。高さ0.3m。クリーム色、丸く膨らんだ胴、細い首、上部に開いた口と縁、内側の空洞。回転体で滑らかに。",
+          "criteria": [
+            "クリーム色",
+            "膨らんだ胴と細い首",
+            "開口部と縁",
+            "空洞"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 37698,
+          "elapsedMs": 38768,
+          "tokens": 4256,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要形状と内壁断面を確認。胴の周囲に依頼外の装飾リングが付く。"
+          }
+        },
+        {
+          "key": "tree-1",
+          "name": "tree",
+          "prompt": "ローポリの広葉樹。高さ3m。茶色の幹と枝、濃淡の緑の葉のかたまり5つ以上。根元が少し広がる。",
+          "criteria": [
+            "茶色の幹と枝",
+            "濃淡の緑",
+            "5つ以上の樹冠のかたまり",
+            "広がる根元"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 37276,
+          "elapsedMs": 38314,
+          "tokens": 4206,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "茶色の幹と枝、濃淡の緑の樹冠5塊以上、広がる根元を確認。"
+          }
+        },
+        {
+          "key": "tree-2",
+          "name": "tree",
+          "prompt": "ローポリの広葉樹。高さ3m。茶色の幹と枝、濃淡の緑の葉のかたまり5つ以上。根元が少し広がる。",
+          "criteria": [
+            "茶色の幹と枝",
+            "濃淡の緑",
+            "5つ以上の樹冠のかたまり",
+            "広がる根元"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 27083,
+          "elapsedMs": 28076,
+          "tokens": 3203,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要条件を充足。樹冠は横長。小さい緑の地面も追加されている。"
+          }
+        },
+        {
+          "key": "tree-3",
+          "name": "tree",
+          "prompt": "ローポリの広葉樹。高さ3m。茶色の幹と枝、濃淡の緑の葉のかたまり5つ以上。根元が少し広がる。",
+          "criteria": [
+            "茶色の幹と枝",
+            "濃淡の緑",
+            "5つ以上の樹冠のかたまり",
+            "広がる根元"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 29703,
+          "elapsedMs": 30701,
+          "tokens": 3461,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要条件を充足。葉の塊の分布が疎らで左右非対称だが、5塊以上ある。"
+          }
+        },
+        {
+          "key": "container-1",
+          "name": "container",
+          "prompt": "SF貨物コンテナ。幅2m、奥行き1m、高さ1m。グレーの箱、オレンジの補強フレーム、黒いパネルの継ぎ目、前面の青いロック。",
+          "criteria": [
+            "グレーの箱",
+            "オレンジの補強",
+            "黒い継ぎ目",
+            "青いロック"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 51281,
+          "elapsedMs": 52217,
+          "tokens": 5588,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "グレーの箱、オレンジ補強、黒い継ぎ目、前面の青いロックを確認。"
+          }
+        },
+        {
+          "key": "container-2",
+          "name": "container",
+          "prompt": "SF貨物コンテナ。幅2m、奥行き1m、高さ1m。グレーの箱、オレンジの補強フレーム、黒いパネルの継ぎ目、前面の青いロック。",
+          "criteria": [
+            "グレーの箱",
+            "オレンジの補強",
+            "黒い継ぎ目",
+            "青いロック"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 71777,
+          "elapsedMs": 72868,
+          "tokens": 7604,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要条件を充足。外側の装飾や複数の小型パネルがある。"
+          }
+        },
+        {
+          "key": "container-3",
+          "name": "container",
+          "prompt": "SF貨物コンテナ。幅2m、奥行き1m、高さ1m。グレーの箱、オレンジの補強フレーム、黒いパネルの継ぎ目、前面の青いロック。",
+          "criteria": [
+            "グレーの箱",
+            "オレンジの補強",
+            "黒い継ぎ目",
+            "青いロック"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 49646,
+          "elapsedMs": 50598,
+          "tokens": 5428,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "主要な4条件を目視確認。上面に依頼外の小型部品がある。"
+          }
+        }
+      ]
+    },
+    {
+      "stage": "v2",
+      "status": "Complete",
+      "systemPromptSha256": "a517ae5c6a14b13012d267413882c362f74412f5eec5a2807824adc9ac7f98c4",
+      "runtimeSha256": "9e13bb0b1c4d3240c4a0d12f9079ad07379328973336ae65606d7b2ff2a5fb25",
+      "settings": {
+        "model": "qwen38-flash-next",
+        "maxTokens": 16384,
+        "timeoutSeconds": 300,
+        "temperature": 0.65,
+        "runtimeSeconds": 20,
+        "reasoningEffort": "low",
+        "maxTriangles": 500000,
+        "maxMeshes": 2000,
+        "maxTextureSize": 2048
+      },
+      "rows": [
+        {
+          "key": "chair-1",
+          "name": "chair",
+          "prompt": "木製の椅子。4本の脚、四角い座面、背もたれに3本の縦桟。座面の高さ0.45m。自然な茶色。",
+          "criteria": [
+            "4本脚",
+            "四角い座面",
+            "縦桟3本の背もたれ",
+            "茶色の木部"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 37782,
+          "elapsedMs": 38865,
+          "tokens": 4754,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "茶色の椅子。4本脚、四角い座面、3本の縦桟を画像とソースで確認。"
+          }
+        },
+        {
+          "key": "table-1",
+          "name": "table",
+          "prompt": "木製の机。幅1.2m、奥行き0.6m、高さ0.75m。長方形の天板、4本脚、前面右側に引き出しと取っ手。",
+          "criteria": [
+            "長方形の天板",
+            "4本脚",
+            "前面右の引き出しと取っ手",
+            "木製の色"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 81567,
+          "elapsedMs": 82692,
+          "tokens": 9070,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "四角い木製天板、4本脚、右の引き出しと取っ手を確認。木目と茶色が明瞭。"
+          }
+        },
+        {
+          "key": "house-1",
+          "name": "house",
+          "prompt": "ローポリの家。白い壁、赤い切妻屋根、前面の茶色いドアと青い窓2つ、煙突。幅4m、奥行き3m。",
+          "criteria": [
+            "白い壁",
+            "赤い切妻屋根",
+            "前面ドアと青い窓2つ",
+            "煙突"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 63241,
+          "elapsedMs": 64232,
+          "tokens": 7255,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "壁・赤屋根・ドア・窓2つ・煙突を確認。baselineの余分な芝生台座がなくなった。"
+          }
+        },
+        {
+          "key": "tower-1",
+          "name": "tower",
+          "prompt": "石造りの円形の見張り塔。高さ5m、直径2m。灰色の円筒形本体、頂上の胸壁、縦長の窓3つ、地上のアーチ型入口。",
+          "criteria": [
+            "灰色の円筒形塔",
+            "頂上の胸壁",
+            "縦長の窓",
+            "地上入口"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 47233,
+          "elapsedMs": 48257,
+          "tokens": 5682,
+          "review": {
+            "pass": false,
+            "checks": [
+              true,
+              true,
+              true,
+              false
+            ],
+            "note": "円筒・胸壁・窓はあるが入口アーチが下向きに凹む。absarc(Math.PI,0,false)の方向が逆。暗い面を実体の壁の前に置いており実際の壁穴でもない。元のユーザー指示にあるアーチ型入口を満たさず不合格。"
+          }
+        },
+        {
+          "key": "robot-1",
+          "name": "robot",
+          "prompt": "かわいいローポリのロボット小物。高さ0.5m。青い箱型の胴、頭に黄色い目2つ、左右の腕、2本脚、頭上にアンテナ。",
+          "criteria": [
+            "青い箱型胴",
+            "黄色い目2つ",
+            "左右の腕と2本脚",
+            "アンテナ"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 36611,
+          "elapsedMs": 37564,
+          "tokens": 4634,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "青い箱型胴、黄色い目2つ、両腕と脚、アンテナを確認。"
+          }
+        },
+        {
+          "key": "car-1",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 80290,
+          "elapsedMs": 81213,
+          "tokens": 8920,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "青いフロントガラスが正面から明瞭に見え、車の前方も+Z。4輪と前後灯を保持。総全長は3.275mで指定3mを9.2%超過し、寸法指示は未解決。車室側面の仕上がりも粗い。"
+          }
+        },
+        {
+          "key": "lamp-1",
+          "name": "lamp",
+          "prompt": "卓上ランプ。全高0.5m。真鍮色の丸いベースと細い支柱、緑のドーム型シェード、その内側の暖色電球。",
+          "criteria": [
+            "真鍮色の丸いベース",
+            "細い支柱",
+            "緑のドーム型シェード",
+            "内側の暖色電球"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 57757,
+          "elapsedMs": 58793,
+          "tokens": 6710,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "真鍮色の丸いベースと支柱、開いた緑のドーム、内側から見える暖色電球を確認。"
+          }
+        },
+        {
+          "key": "vase-1",
+          "name": "vase",
+          "prompt": "陶器の花瓶。高さ0.3m。クリーム色、丸く膨らんだ胴、細い首、上部に開いた口と縁、内側の空洞。回転体で滑らかに。",
+          "criteria": [
+            "クリーム色",
+            "膨らんだ胴と細い首",
+            "開口部と縁",
+            "空洞"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 39357,
+          "elapsedMs": 40465,
+          "tokens": 4868,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "クリーム色の胴・細い首・縁と開口を確認。Latheの外壁から縁、内壁、内底へ戻るプロファイルで実空洞も確認。"
+          }
+        },
+        {
+          "key": "tree-1",
+          "name": "tree",
+          "prompt": "ローポリの広葉樹。高さ3m。茶色の幹と枝、濃淡の緑の葉のかたまり5つ以上。根元が少し広がる。",
+          "criteria": [
+            "茶色の幹と枝",
+            "濃淡の緑",
+            "5つ以上の樹冠のかたまり",
+            "広がる根元"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 30095,
+          "elapsedMs": 31029,
+          "tokens": 3984,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "茶色の幹と枝、濃淡の緑の複数樹冠、広い根元を確認。余分な地面なし。"
+          }
+        },
+        {
+          "key": "container-1",
+          "name": "container",
+          "prompt": "SF貨物コンテナ。幅2m、奥行き1m、高さ1m。グレーの箱、オレンジの補強フレーム、黒いパネルの継ぎ目、前面の青いロック。",
+          "criteria": [
+            "グレーの箱",
+            "オレンジの補強",
+            "黒い継ぎ目",
+            "青いロック"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 60343,
+          "elapsedMs": 61288,
+          "tokens": 6968,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "灰色の箱、オレンジの枠、黒い継ぎ目、青い正面ロックを確認。"
+          }
+        },
+        {
+          "key": "table-2",
+          "name": "table",
+          "prompt": "木製の机。幅1.2m、奥行き0.6m、高さ0.75m。長方形の天板、4本脚、前面右側に引き出しと取っ手。",
+          "criteria": [
+            "長方形の天板",
+            "4本脚",
+            "前面右の引き出しと取っ手",
+            "木製の色"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 55438,
+          "elapsedMs": 56689,
+          "tokens": 6492,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "茶色と木目が明瞭。天板、4本脚、右側の引き出し・取っ手を確認。"
+          }
+        },
+        {
+          "key": "table-3",
+          "name": "table",
+          "prompt": "木製の机。幅1.2m、奥行き0.6m、高さ0.75m。長方形の天板、4本脚、前面右側に引き出しと取っ手。",
+          "criteria": [
+            "長方形の天板",
+            "4本脚",
+            "前面右の引き出しと取っ手",
+            "木製の色"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 77207,
+          "elapsedMs": 78215,
+          "tokens": 8637,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "赤茶の木目が明瞭。天板・4本脚・前面右の引き出しと取っ手。baseline table-3のほぼ白い木材は再発しなかった。"
+          }
+        },
+        {
+          "key": "car-2",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 37799,
+          "elapsedMs": 38763,
+          "tokens": 4745,
+          "review": {
+            "pass": false,
+            "checks": [
+              false,
+              true,
+              false,
+              true
+            ],
+            "note": "赤い車室が異常に高い板状に立ち上がり車の形状が破綻。ExtrudeGeometryは既に+Zに伸びるのにX軸へ-π/2回転して高さに変えている。ガラスも車室と整合しない。4輪と前後灯は存在。全長3.140m。"
+          }
+        },
+        {
+          "key": "car-3",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 86863,
+          "elapsedMs": 87827,
+          "tokens": 9569,
+          "review": {
+            "pass": false,
+            "checks": [
+              true,
+              true,
+              false,
+              true
+            ],
+            "note": "青いフロントガラスがほぼ全て車室の内部。下端だけz=0.31で外側だが上端z=0.01は前面z=0.3の箱内部に入る。斜めガラスと箱形の車室の不整合が再発。"
+          }
+        },
+        {
+          "key": "lamp-2",
+          "name": "lamp",
+          "prompt": "卓上ランプ。全高0.5m。真鍮色の丸いベースと細い支柱、緑のドーム型シェード、その内側の暖色電球。",
+          "criteria": [
+            "真鍮色の丸いベース",
+            "細い支柱",
+            "緑のドーム型シェード",
+            "内側の暖色電球"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 45338,
+          "elapsedMs": 46533,
+          "tokens": 5489,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "真鍮色の丸いベース・支柱・緑の開いたドーム。内側y=0.395の電球と暖色emissiveフィラメントをソースで補助確認。"
+          }
+        },
+        {
+          "key": "lamp-3",
+          "name": "lamp",
+          "prompt": "卓上ランプ。全高0.5m。真鍮色の丸いベースと細い支柱、緑のドーム型シェード、その内側の暖色電球。",
+          "criteria": [
+            "真鍮色の丸いベース",
+            "細い支柱",
+            "緑のドーム型シェード",
+            "内側の暖色電球"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 51751,
+          "elapsedMs": 52910,
+          "tokens": 6121,
+          "review": {
+            "pass": true,
+            "checks": [
+              true,
+              true,
+              true,
+              true
+            ],
+            "note": "真鍮色の丸いベースと支柱、濃緑ドーム。内側の暖色電球をソースで補助確認。実行・GLBまで初回成功。"
+          }
+        }
+      ]
+    },
+    {
+      "stage": "v3",
+      "status": "Exploratory; visual review incomplete; not selected",
+      "systemPromptSha256": "d828b27e13647b9df05fa4eaf7da4b561a4137ca7395ae51caa1887763bf403a",
+      "runtimeSha256": "9e13bb0b1c4d3240c4a0d12f9079ad07379328973336ae65606d7b2ff2a5fb25",
+      "settings": {
+        "model": "qwen38-flash-next",
+        "maxTokens": 16384,
+        "timeoutSeconds": 300,
+        "temperature": 0.65,
+        "runtimeSeconds": 20,
+        "reasoningEffort": "low",
+        "maxTriangles": 500000,
+        "maxMeshes": 2000,
+        "maxTextureSize": 2048
+      },
+      "rows": [
+        {
+          "key": "tower-1",
+          "name": "tower",
+          "prompt": "石造りの円形の見張り塔。高さ5m、直径2m。灰色の円筒形本体、頂上の胸壁、縦長の窓3つ、地上のアーチ型入口。",
+          "criteria": [
+            "灰色の円筒形塔",
+            "頂上の胸壁",
+            "縦長の窓",
+            "地上入口"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 67611,
+          "elapsedMs": 68892,
+          "tokens": 7920,
+          "review": {
+            "pass": false,
+            "checks": [
+              false,
+              true,
+              true,
+              true
+            ],
+            "note": "アーチ自体は上向きに改善。しかし入口用CylinderGeometryの角度欠損が塔の全高に適用され、正面の壁が屋上まで縦に失われた。塔本体の形状として不合格。3窓は背面側に配置。余分な台座、総幅2.4mも残る。"
+          }
+        },
+        {
+          "key": "tower-2",
+          "name": "tower",
+          "prompt": "石造りの円形の見張り塔。高さ5m、直径2m。灰色の円筒形本体、頂上の胸壁、縦長の窓3つ、地上のアーチ型入口。",
+          "criteria": [
+            "灰色の円筒形塔",
+            "頂上の胸壁",
+            "縦長の窓",
+            "地上入口"
+          ],
+          "seed": 43,
+          "firstValid": false,
+          "success": false,
+          "attempts": 1,
+          "apiMs": 166642,
+          "elapsedMs": 166679,
+          "tokens": 17653,
+          "review": {
+            "pass": false,
+            "checks": [
+              false,
+              false,
+              false,
+              false
+            ],
+            "note": "出力16,384トークン上限に達しfinish_reason=length。部分的なコードを実行せず終了。今回の条件を維持し、上限を増やす再試行は行わなかった。"
+          }
+        },
+        {
+          "key": "tower-3",
+          "name": "tower",
+          "prompt": "石造りの円形の見張り塔。高さ5m、直径2m。灰色の円筒形本体、頂上の胸壁、縦長の窓3つ、地上のアーチ型入口。",
+          "criteria": [
+            "灰色の円筒形塔",
+            "頂上の胸壁",
+            "縦長の窓",
+            "地上入口"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 58936,
+          "elapsedMs": 59948,
+          "tokens": 7060,
+          "review": {
+            "pass": false,
+            "checks": [
+              true,
+              true,
+              false,
+              true
+            ],
+            "note": "アーチは正しく上向き。しかし窓の暗い面が石色の無穴Boxフレームの内側に埋まり、見た目は縦の石板になっている。円筒・胸壁・入口は確認。入口も暗い面による表現で壁は抜けていない。"
+          }
+        },
+        {
+          "key": "car-1",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 42,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 63352,
+          "elapsedMs": 64298,
+          "tokens": 7482,
+          "review": null
+        },
+        {
+          "key": "car-2",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 43,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 82217,
+          "elapsedMs": 83177,
+          "tokens": 9338,
+          "review": null
+        },
+        {
+          "key": "car-3",
+          "name": "car",
+          "prompt": "ローポリの赤い小型自動車。全長3m。4輪、青いフロントガラス、白いヘッドライト2つ、後部に赤いテールライト。",
+          "criteria": [
+            "赤い車体",
+            "4輪",
+            "青いフロントガラス",
+            "前後のライト"
+          ],
+          "seed": 44,
+          "firstValid": true,
+          "success": true,
+          "attempts": 1,
+          "apiMs": 46748,
+          "elapsedMs": 47654,
+          "tokens": 5853,
+          "review": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-# Qwen Model Studio
+# LLM Prefab maker
 
 **自然文から3Dモデルを作り、確認・修正してGLBで保存するローカルアプリ。**
 

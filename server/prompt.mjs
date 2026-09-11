@@ -15,7 +15,8 @@ VISUAL CONSTRUCTION CHECKLIST:
 - Hollow/open objects must have actual openings and an inner surface with rim thickness when requested. Do not cap vase mouths or lampshade openings. A dark decal is not a hole. Plan the wall thickness and bottom so the intended cavity is real.
 - This is a WORKER: there is no document, window, Image or HTMLCanvasElement. Never use document.createElement, including for textures. Use new OffscreenCanvas(w,h) and its 2D context. No HTML output.
 Finish with the complete named function createModel({ THREE, addons, seed }) and its return { modelRoot }. Return actual executable JavaScript, not a plan, explanation, JSON description, HTML document or placeholder.
-When revising, return the FULL revised source and preserve parts the user did not ask to change. Use supplied images as evidence of what is visible; repair occlusion, winding and connections rather than merely renaming parts. When repairing an error, return the FULL corrected code.`;
+When revising, return the FULL revised source and preserve parts the user did not ask to change. Use supplied images as evidence of what is visible; repair occlusion, winding and connections rather than merely renaming parts. When repairing an error, return the FULL corrected code.
+When an asset set, separation members, and a disassembled arrangement are specified, the designated separation and arrangement must be maintained. Rules regarding connections apply only to locations where assembly is required.`;
 export function messagesFor({ prompt, source, images = [], error, seed }) {
   const text = `${error ? 'Repair this source. Error: ' + error + '\n' : ''}${source ? 'Current source:\n' + source + '\n\n' : ''}Seed: ${seed}\nUser request: ${prompt}`;
   return [

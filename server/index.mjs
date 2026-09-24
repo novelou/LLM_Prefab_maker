@@ -4,9 +4,10 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { defaults, validateSettings } from '../shared/config.mjs';
+import { textExcerpt } from '../shared/diagnostics.mjs';
 import { extractRepairSource, extractSource } from '../shared/source.mjs';
 import { messagesFor, systemPrompt } from './prompt.mjs';
-import { ApiError, upstream } from './upstream.mjs';
+import { ApiError, upstream, upstreamChatStream } from './upstream.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 export async function startServer({
@@ -74,6 +75,8 @@ export async function startServer({
           error: 'セッションが無効です。ページを再読込してください。',
           code: 'session',
         });
+      let streamingResponse = false;
+      const streamEvent = (value) => res.write(JSON.stringify(value) + '\n');
       try {
         if (pathname === '/api/settings' && req.method === 'PUT') {
           if (active) throw new ApiError('処理中は接続設定を変更できません。', 'busy', 409);
@@ -214,22 +217,30 @@ export async function startServer({
               'validation',
               400,
             );
-          const result = await upstream(
-            settings,
-            apiKey,
-            '/chat/completions',
-            {
-              model: settings.model,
-              max_tokens: settings.maxTokens,
-              temperature: settings.temperature,
-              stream: false,
-              ...(settings.reasoningEffort === 'low'
-                ? { chat_template_kwargs: { reasoning_effort: 'low' } }
-                : {}),
-              messages: messagesFor({ ...input, images }),
-            },
-            signal,
-          );
+          const request = {
+            model: settings.model,
+            max_tokens: settings.maxTokens,
+            temperature: settings.temperature,
+            stream: false,
+            ...(settings.reasoningEffort !== 'default'
+              ? { chat_template_kwargs: { reasoning_effort: settings.reasoningEffort } }
+              : {}),
+            messages: messagesFor({ ...input, images }),
+          };
+          if (input.streamOutput === true) {
+            res.writeHead(200, {
+              'Content-Type': 'application/x-ndjson; charset=utf-8',
+              'Cache-Control': 'no-store',
+              'X-Content-Type-Options': 'nosniff',
+            });
+            streamingResponse = true;
+            streamEvent({ type: 'start' });
+          }
+          const result = streamingResponse
+            ? await upstreamChatStream(settings, apiKey, request, signal, (channel, text) =>
+                streamEvent({ type: 'delta', channel, text }),
+              )
+            : await upstream(settings, apiKey, '/chat/completions', request, signal);
           const choice = result.data.choices?.[0];
           let source;
           try {
@@ -242,6 +253,8 @@ export async function startServer({
               elapsedMs: result.elapsedMs,
               usage: result.data.usage ?? null,
               finishReason: choice?.finish_reason,
+              output: textExcerpt(choice?.message?.content),
+              reasoning: textExcerpt(choice?.message?.reasoning_content),
               ...(err.code === 'contract' &&
               !input.error &&
               choice?.finish_reason === 'stop' &&
@@ -251,6 +264,17 @@ export async function startServer({
                 : {}),
             };
             throw err;
+          }
+          if (streamingResponse) {
+            streamEvent({
+              type: 'result',
+              source,
+              elapsedMs: result.elapsedMs,
+              usage: result.data.usage ?? null,
+              model: settings.model,
+            });
+            res.end();
+            return;
           }
           return send(res, 200, {
             source,
@@ -262,12 +286,17 @@ export async function startServer({
           if (active === job) active = null;
         }
       } catch (err) {
-        if (!res.destroyed)
-          send(res, err.status || 400, {
+        if (!res.destroyed) {
+          const error = {
             error: err.message || '処理に失敗しました。',
             code: err.code || 'validation',
             ...(err.details ? { details: err.details } : {}),
-          });
+          };
+          if (streamingResponse) {
+            streamEvent({ type: 'error', ...error, status: err.status || 400 });
+            res.end();
+          } else send(res, err.status || 400, error);
+        }
       }
       return;
     }

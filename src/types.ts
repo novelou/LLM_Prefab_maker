@@ -8,7 +8,7 @@ export interface Settings {
   maxTriangles: number;
   maxMeshes: number;
   maxTextureSize: number;
-  reasoningEffort: string;
+  reasoningEffort: 'default' | 'none' | 'low' | 'medium' | 'xhigh';
 }
 export interface Stats {
   meshes: number;

@@ -7,7 +7,7 @@ export const defaults = {
   timeoutSeconds: 300,
   temperature: 0.65,
   runtimeSeconds: 20,
-  reasoningEffort: 'default',
+  reasoningEffort: /** @type {const} */ ('default'),
   maxTriangles: 500000,
   maxMeshes: 2000,
   maxTextureSize: 2048,
@@ -36,8 +36,8 @@ export function validateSettings(input) {
     .trim()
     .slice(0, 300);
   result.reasoningEffort = input.reasoningEffort ?? defaults.reasoningEffort;
-  if (!['default', 'low'].includes(result.reasoningEffort))
-    throw new Error('reasoning設定が不正です。');
+  if (!['default', 'none', 'low', 'medium', 'xhigh'].includes(result.reasoningEffort))
+    throw new Error('Reasoning effortの設定が不正です。');
   for (const [key, min, max, integer] of [
     ['maxTokens', 256, 262144, true],
     ['timeoutSeconds', 5, 1800, true],

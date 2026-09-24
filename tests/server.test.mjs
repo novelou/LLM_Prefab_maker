@@ -64,6 +64,10 @@ test('line-scoped repair edits only the requested duplicate and rejects stale ra
   assert.throws(() => extractRepairSource('{"mode":"edits",', 'stop', repeated), {
     code: 'patch',
   });
+  assert.throws(() => extractRepairSource('', 'stop', repeated), { code: 'patch' });
+  assert.throws(() => extractRepairSource('not a source or edit', 'stop', repeated), {
+    code: 'patch',
+  });
   const twoEdits = extractRepairSource(
     patch([
       {

@@ -3,7 +3,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { strFromU8, unzipSync } from 'fflate';
 
-test('line-scoped repair changes only the selected duplicate and rejects a stale edit', async ({
+test('line-scoped repair retries invalid edits but never retries compiled code', async ({
   page,
 }) => {
   const broken = [
@@ -22,11 +22,31 @@ test('line-scoped repair changes only the selected duplicate and rejects a stale
       mode: 'edits',
       edits: [{ startLine: 5, old, new: '  mesh.position.y = 0.6;' }],
     });
+  const compileBroken = [
+    'function createModel({ THREE }) {',
+    '  const modelRoot = new THREE.Group();',
+    '  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());',
+    '  mesh.position.y = ;',
+    '  modelRoot.add(mesh);',
+    '  return { modelRoot };',
+    '}',
+  ].join('\n');
+  const stillInvalid = JSON.stringify({
+    mode: 'edits',
+    edits: [{ startLine: 4, old: '  mesh.position.y = ;', new: '  mesh.position.y = ( ;' }],
+  });
+  const badEdit = edit('  mesh.position.y = 0.6;');
   const replies = [
     broken,
+    badEdit,
+    badEdit,
     edit('  mesh.position.y = 0.5;'),
     broken,
-    edit('  mesh.position.y = 0.6;'),
+    badEdit,
+    badEdit,
+    badEdit,
+    compileBroken,
+    stillInvalid,
   ];
   const requests: any[] = [];
   const fake = http.createServer(async (req, res) => {
@@ -59,10 +79,14 @@ test('line-scoped repair changes only the selected duplicate and rejects a stale
 
     await expect(page.locator('.message.success')).toContainText('自動修復');
     await expect(page.getByRole('button', { name: 'GLBを保存', exact: true })).toBeEnabled();
-    expect(requests).toHaveLength(2);
+    expect(requests).toHaveLength(4);
     expect(requests[1].messages[1].content).toContain('4|  mesh.position.y = 0.5;');
     expect(requests[1].messages[1].content).toContain('5|  mesh.position.y = 0.5;');
     expect(requests[1].messages[1].content).toContain('deliberate failure');
+    expect(requests[2].messages[1].content).toContain('前回の編集応答の失敗 (1/3)');
+    expect(requests[3].messages[1].content).toContain('前回の編集応答の失敗 (2/3)');
+    expect(requests[2].messages[1].content).toContain('前回の編集応答:');
+    expect(requests[2].messages[1].content).toContain('5|  mesh.position.y = 0.5;');
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),
@@ -75,10 +99,18 @@ test('line-scoped repair changes only the selected duplicate and rejects a stale
     expect(JSON.parse(strFromU8(archive['project.json'])).versions[0].repaired).toBe(true);
 
     await page.getByRole('button', { name: 'モデルを生成', exact: true }).click();
-    await expect(page.getByRole('alert')).toContainText('元コードと一致しません');
-    expect(requests).toHaveLength(4);
+    await expect(page.getByRole('alert')).toContainText('編集応答が3回失敗しました');
+    expect(requests).toHaveLength(8);
+    expect(requests[5].messages[1].content).toContain('5|  mesh.position.y = 0.5;');
+    expect(requests[6].messages[1].content).toContain('前回の編集応答の失敗 (1/3)');
     await expect(page.locator('.history-list>button')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'GLBを保存', exact: true })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'モデルを生成', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('Unexpected token');
+    expect(requests).toHaveLength(10);
+    await expect(page.locator('.generation-trace summary')).toContainText('2回の試行');
+    await expect(page.locator('.history-list>button')).toHaveCount(1);
   } finally {
     fake.closeAllConnections();
     await new Promise<void>((resolve) => fake.close(() => resolve()));

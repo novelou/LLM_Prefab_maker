@@ -22,11 +22,12 @@ const phaseText: Record<Phase, string> = {
   connecting: '接続を確認中',
   generating: 'Qwen がモデルを制作中',
   validating: '形状とGLBを検証中',
-  repairing: 'コードを自動修復中（1回）',
+  repairing: 'コードを自動修復中',
   exporting: 'GLBを書き出し中',
   capturing: '3方向の画像を撮影中',
   loading: 'プレビューを準備中',
 };
+const MAX_PATCH_ATTEMPTS = 3;
 type TextPreview = NonNullable<ReturnType<typeof textExcerpt>>;
 type GenerationTrace = {
   attempt: number;
@@ -218,8 +219,7 @@ function App() {
     function event(line: string) {
       if (!line.trim()) return;
       const data = JSON.parse(line);
-      if (data.type === 'delta' && typeof data.text === 'string')
-        onDelta(data.channel, data.text);
+      if (data.type === 'delta' && typeof data.text === 'string') onDelta(data.channel, data.text);
       if (data.type === 'result') result = data;
       if (data.type === 'error')
         throw Object.assign(new Error(data.error || '生成に失敗しました。'), {
@@ -439,10 +439,13 @@ function App() {
       let source = revise ? current?.source : undefined,
         repairError: string | undefined,
         repaired = false;
+      let repairRequested = false;
+      let originalRepairError = '';
+      let patchFailures = 0;
       let totalMs = 0;
       const usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
       const modelSeed = revise && current ? current.seed : seed;
-      for (let attempt = 0; attempt <= (autoRepair ? 1 : 0); attempt++) {
+      for (let attempt = 0; attempt <= (autoRepair ? MAX_PATCH_ATTEMPTS : 0); attempt++) {
         stage = 'API応答';
         setPhase(attempt ? 'repairing' : 'generating');
         traces.push({
@@ -481,14 +484,36 @@ function App() {
             output: details.output ?? traces[traces.length - 1].output,
             reasoning: details.reasoning ?? traces[traces.length - 1].reasoning,
           });
-          if (
-            e.code !== 'contract' ||
-            !e.details?.rejectedSource ||
-            attempt >= (autoRepair ? 1 : 0)
-          )
+          if (repairRequested && e.code === 'patch') {
+            patchFailures++;
+            totalMs += details.elapsedMs || 0;
+            for (const k of ['prompt_tokens', 'completion_tokens', 'total_tokens'] as const)
+              usage[k] += details.usage?.[k] || 0;
+            if (patchFailures >= MAX_PATCH_ATTEMPTS)
+              throw Object.assign(
+                new Error(
+                  `編集応答が${MAX_PATCH_ATTEMPTS}回失敗しました。最後の理由: ${e.message}`,
+                ),
+                { code: 'patch' },
+              );
+            const previousOutput = details.output?.text;
+            repairError = [
+              `元のエラー: ${originalRepairError.slice(0, 1200)}`,
+              `前回の編集応答の失敗 (${patchFailures}/${MAX_PATCH_ATTEMPTS}): ${String(e.message).slice(0, 800)}`,
+              ...(typeof previousOutput === 'string'
+                ? [`前回の編集応答:\n${previousOutput.slice(0, 1800)}`]
+                : []),
+            ]
+              .join('\n')
+              .slice(0, 4000);
+            continue;
+          }
+          if (repairRequested || !autoRepair || e.code !== 'contract' || !details.rejectedSource)
             throw e;
           source = e.details.rejectedSource;
-          repairError = e.message;
+          originalRepairError = String(e.message);
+          repairError = originalRepairError.slice(0, 4000);
+          repairRequested = true;
           repaired = true;
           totalMs += e.details.elapsedMs || 0;
           for (const k of ['prompt_tokens', 'completion_tokens', 'total_tokens'] as const)
@@ -542,9 +567,11 @@ function App() {
         } catch (e: any) {
           valid(id);
           updateTrace({ stage, status: 'failed', error: e.message });
-          if (attempt >= (autoRepair ? 1 : 0)) throw e;
+          if (repairRequested || !autoRepair) throw e;
           repaired = true;
-          repairError = String(e.message).slice(0, 4000);
+          originalRepairError = String(e.message);
+          repairError = originalRepairError.slice(0, 4000);
+          repairRequested = true;
         }
       }
     } catch (e: any) {
@@ -826,7 +853,7 @@ function App() {
                   disabled={busy}
                   onChange={(e) => setAutoRepair(e.target.checked)}
                 />
-                実行エラーを1回まで自動修復
+                実行エラーを1回まで自動修復（編集応答は最大3回試行）
               </label>
             </div>
             <div className={`job-status ${busy ? 'working' : ''}`} role="status">
@@ -871,7 +898,9 @@ function App() {
                     {generationTraces.at(-1)?.status === 'running' ? '受信中' : '記録済み'}
                   </span>
                 </summary>
-                <p>生成中の出力と失敗箇所を表示します。最後に受信した内容は次の生成まで残ります。</p>
+                <p>
+                  生成中の出力と失敗箇所を表示します。最後に受信した内容は次の生成まで残ります。
+                </p>
                 {generationTraces.map((trace) => (
                   <div className="trace-attempt" key={trace.attempt}>
                     <div className="trace-heading">
@@ -879,7 +908,11 @@ function App() {
                       <span className={`trace-${trace.status}`}>{trace.stage}</span>
                     </div>
                     {trace.error && <p className="trace-error">{trace.error}</p>}
-                    {(trace.code || trace.httpStatus || trace.finishReason || trace.elapsedMs || trace.totalTokens) && (
+                    {(trace.code ||
+                      trace.httpStatus ||
+                      trace.finishReason ||
+                      trace.elapsedMs ||
+                      trace.totalTokens) && (
                       <p className="trace-meta">
                         {[
                           trace.code && `分類: ${trace.code}`,
@@ -887,25 +920,39 @@ function App() {
                           trace.finishReason && `終了理由: ${trace.finishReason}`,
                           trace.elapsedMs && `API: ${(trace.elapsedMs / 1000).toFixed(1)}秒`,
                           trace.totalTokens && `トークン: ${trace.totalTokens.toLocaleString()}`,
-                        ].filter(Boolean).join(' · ')}
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </p>
                     )}
                     {trace.output?.text && (
                       <div className="trace-text">
                         <b>生成テキスト{trace.output.truncated ? '（一部を表示）' : ''}</b>
-                        <pre onScroll={(e) => {
-                          const pre = e.currentTarget;
-                          pre.dataset.follow = String(pre.scrollHeight - pre.scrollTop - pre.clientHeight < 80);
-                        }}>{trace.output.text}</pre>
+                        <pre
+                          onScroll={(e) => {
+                            const pre = e.currentTarget;
+                            pre.dataset.follow = String(
+                              pre.scrollHeight - pre.scrollTop - pre.clientHeight < 80,
+                            );
+                          }}
+                        >
+                          {trace.output.text}
+                        </pre>
                       </div>
                     )}
                     {trace.reasoning?.text && (
                       <div className="trace-text">
                         <b>推論テキスト{trace.reasoning.truncated ? '（一部を表示）' : ''}</b>
-                        <pre onScroll={(e) => {
-                          const pre = e.currentTarget;
-                          pre.dataset.follow = String(pre.scrollHeight - pre.scrollTop - pre.clientHeight < 80);
-                        }}>{trace.reasoning.text}</pre>
+                        <pre
+                          onScroll={(e) => {
+                            const pre = e.currentTarget;
+                            pre.dataset.follow = String(
+                              pre.scrollHeight - pre.scrollTop - pre.clientHeight < 80,
+                            );
+                          }}
+                        >
+                          {trace.reasoning.text}
+                        </pre>
                       </div>
                     )}
                     {!trace.output?.text && !trace.reasoning?.text && (
@@ -995,7 +1042,9 @@ function App() {
                   <option value="xhigh">xhigh</option>
                 </select>
               </label>
-              <p className="field-note">Qwen3.8 / vLLM向け。生成時に選択値を送信します。noneの対応は推論先次第です。</p>
+              <p className="field-note">
+                Qwen3.8 / vLLM向け。生成時に選択値を送信します。noneの対応は推論先次第です。
+              </p>
               <label>
                 API Key <span className="optional">任意 · セッション中のみ保持</span>
                 <input
@@ -1242,9 +1291,7 @@ function App() {
             <div>
               <Icon name="check" size={17} />
               <span>
-                {current
-                  ? 'ソースから再編集できる、静的3Dモデル'
-                  : 'GLBで出力可能'}
+                {current ? 'ソースから再編集できる、静的3Dモデル' : 'GLBで出力可能'}
                 <small>モデル本体のみを出力 · Blenderなどで編集できます</small>
               </span>
             </div>

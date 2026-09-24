@@ -31,12 +31,21 @@ function patchError(message) {
 
 export function extractRepairSource(content, finishReason, original) {
   if (finishReason !== 'stop') return extractSource(content, finishReason);
-  if (typeof content !== 'string' || !content.trim()) return extractSource(content, finishReason);
+  if (typeof content !== 'string' || !content.trim()) throw patchError('修復編集の応答が空です。');
   const response = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
   const fenced = /^```(?:json)?\s*\n([\s\S]*?)```$/.exec(response);
   const body = (fenced ? fenced[1] : response).trim();
+  if (!body) throw patchError('修復編集の応答が空です。');
   // A raw full-source response remains a fallback for models that cannot emit edits.
-  if (!body.startsWith('{') && !body.startsWith('[')) return extractSource(content, finishReason);
+  if (!body.startsWith('{') && !body.startsWith('[')) {
+    try {
+      return extractSource(content, finishReason);
+    } catch (error) {
+      if (error.code === 'contract' || error.code === 'empty')
+        throw patchError('修復編集も完全なソースも返されませんでした。');
+      throw error;
+    }
+  }
   let patch;
   try {
     patch = JSON.parse(body);

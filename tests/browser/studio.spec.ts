@@ -108,6 +108,10 @@ test('generation, revision, undo and one repair retain the last successful versi
   await mockSource(page, 'function createModel(){throw new Error("broken");}');
   await page.getByRole('button', { name: '追加指示で修正', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('broken');
+  const generationDetails = page.locator('.generation-trace');
+  await generationDetails.locator('summary').click();
+  await expect(generationDetails).toContainText('モデル構築・GLB検証');
+  await expect(generationDetails.locator('pre').last()).toContainText('throw new Error("broken")');
   await expect(page.locator('.history-list>.selected')).toContainText('v01');
   await expect(page.getByRole('button', { name: 'GLBを保存', exact: true })).toBeEnabled();
 });
@@ -176,6 +180,41 @@ test('a complete response missing the entry point gets exactly one repair', asyn
   expect(calls).toBe(2);
   await expect(page.locator('.message.success')).toContainText('自動修復');
   await expect(page.locator('.model-info')).toContainText('50');
+});
+
+test('incomplete streamed output stays available in collapsed generation details', async ({ page }) => {
+  await ready(page);
+  await page.getByLabel('実行エラーを1回まで自動修復').uncheck();
+  await page.route('**/api/generate', (route) =>
+    route.fulfill({
+      contentType: 'application/x-ndjson',
+      body: [
+        { type: 'start' },
+        { type: 'delta', channel: 'reasoning', text: '途中までの推論' },
+        { type: 'delta', channel: 'output', text: 'function createModel() {' },
+        {
+          type: 'error',
+          error: '応答が正常終了していません (length)。',
+          code: 'incomplete',
+          status: 400,
+          details: { finishReason: 'length', usage: { total_tokens: 256 } },
+        },
+      ]
+        .map((event) => JSON.stringify(event) + '\n')
+        .join(''),
+    }),
+  );
+  await page.getByLabel('モデルの説明・追加指示').fill('立方体');
+  await page.getByRole('button', { name: 'モデルを生成', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('length');
+  const details = page.locator('.generation-trace');
+  await expect(details).toBeVisible();
+  await expect(details.locator('pre').first()).toBeHidden();
+  await details.locator('summary').click();
+  await expect(details).toContainText('終了理由: length');
+  await expect(details).toContainText('トークン: 256');
+  await expect(details.locator('pre').first()).toContainText('function createModel() {');
+  await expect(details.locator('pre').last()).toContainText('途中までの推論');
 });
 
 test('resource budgets and invalid coordinates fail without replacing the model', async ({

@@ -14,6 +14,9 @@ test('URL normalization preserves proxy paths and rejects credential URLs', () =
   assert.throws(() => normalizeBaseUrl('http://user:secret@localhost'));
   assert.throws(() => validateSettings({ maxTokens: NaN }));
   assert.throws(() => validateSettings({ runtimeSeconds: 0 }));
+  for (const effort of ['default', 'none', 'low', 'medium', 'xhigh'])
+    assert.equal(validateSettings({ reasoningEffort: effort }).reasoningEffort, effort);
+  assert.throws(() => validateSettings({ reasoningEffort: 'high' }));
 });
 test('only complete source is accepted; no partial execution', () => {
   assert.equal(extractSource('```javascript\n' + source + '\n```', 'stop'), source);
@@ -23,6 +26,47 @@ test('only complete source is accepted; no partial execution', () => {
   const arrow = 'export const createModel = ({ THREE }) => ({ modelRoot: new THREE.Group() });';
   assert.equal(extractSource(arrow, 'stop'), arrow);
   assert.equal(executableSource(arrow).startsWith('const createModel'), true);
+});
+test('selected reasoning effort reaches generation requests', async (t) => {
+  let observed;
+  const fake = http.createServer(async (req, res) => {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    observed = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ choices: [{ message: { content: source }, finish_reason: 'stop' }] }));
+  });
+  await new Promise((resolve) => fake.listen(0, '127.0.0.1', resolve));
+  const app = await startServer({ port: 0, persist: false });
+  t.after(() => {
+    app.closeAllConnections();
+    app.close();
+    fake.closeAllConnections();
+    fake.close();
+  });
+  const base = `http://127.0.0.1:${app.address().port}`;
+  const { token } = await (await fetch(base + '/api/session')).json();
+  const request = (path, data, method = 'POST') =>
+    fetch(`${base}/api/${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': token },
+      body: JSON.stringify(data),
+    });
+  const config = {
+    ...defaults,
+    baseUrl: `http://127.0.0.1:${fake.address().port}/v1`,
+    model: 'test-qwen',
+  };
+  for (const effort of ['default', 'none', 'low', 'medium', 'xhigh']) {
+    const saved = await request('settings', { ...config, reasoningEffort: effort }, 'PUT');
+    assert.equal(saved.status, 200);
+    assert.equal((await saved.json()).settings.reasoningEffort, effort);
+    assert.equal((await request('generate', { prompt: 'make a cube', seed: 42 })).status, 200);
+    assert.deepEqual(
+      observed.chat_template_kwargs,
+      effort === 'default' ? undefined : { reasoning_effort: effort },
+    );
+  }
 });
 test('local API: auth, origin, settings, errors, concurrency and cancellation', async (t) => {
   let mode = 'ok',
@@ -62,7 +106,7 @@ test('local API: auth, origin, settings, errors, concurrency and cancellation', 
           : {
               choices: [
                 {
-                  message: { content: source },
+                  message: { content: source, reasoning_content: mode === 'length' ? 'thinking so far' : '' },
                   finish_reason: mode === 'length' ? 'length' : 'stop',
                 },
               ],
@@ -123,7 +167,11 @@ test('local API: auth, origin, settings, errors, concurrency and cancellation', 
   const payload = { prompt: 'make a cube', seed: 42 };
   assert.equal((await (await request('generate', payload)).json()).source, source);
   mode = 'length';
-  assert.equal((await (await request('generate', payload)).json()).code, 'incomplete');
+  const incomplete = await (await request('generate', payload)).json();
+  assert.equal(incomplete.code, 'incomplete');
+  assert.equal(incomplete.details.output.text, source);
+  assert.equal(incomplete.details.reasoning.text, 'thinking so far');
+  assert.equal(incomplete.details.finishReason, 'length');
   for (const status of ['401', '429']) {
     mode = status;
     const res = await request('generate', payload);
@@ -151,4 +199,73 @@ test('local API: auth, origin, settings, errors, concurrency and cancellation', 
   assert.equal((await timeoutResponse.json()).code, 'timeout');
   mode = 'ok';
   assert.equal((await request('generate', payload)).status, 200);
+});
+
+test('streamed generation emits text before completion and keeps partial output on failure', async (t) => {
+  let finishReason = 'stop';
+  let observed;
+  const fake = http.createServer(async (req, res) => {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    observed = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    const emit = (value) => res.write(`data: ${JSON.stringify(value)}\n\n`);
+    emit({ choices: [{ delta: { reasoning_content: 'thinking so far' } }] });
+    emit({ choices: [{ delta: { content: source.slice(0, 30) } }] });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    emit({ choices: [{ delta: { content: source.slice(30) }, finish_reason: finishReason }] });
+    emit({ choices: [], usage: { total_tokens: 12 } });
+    res.end('data: [DONE]\n\n');
+  });
+  await new Promise((resolve) => fake.listen(0, '127.0.0.1', resolve));
+  const app = await startServer({ port: 0, persist: false });
+  t.after(() => {
+    app.closeAllConnections();
+    app.close();
+    fake.closeAllConnections();
+    fake.close();
+  });
+  const base = `http://127.0.0.1:${app.address().port}`;
+  const { token } = await (await fetch(base + '/api/session')).json();
+  const request = (path, data, method = 'POST') =>
+    fetch(`${base}/api/${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': token },
+      body: JSON.stringify(data),
+    });
+  await request('settings', {
+    ...defaults,
+    baseUrl: `http://127.0.0.1:${fake.address().port}/v1`,
+    model: 'test-qwen',
+  }, 'PUT');
+  async function events() {
+    const response = await request('generate', { prompt: 'cube', seed: 42, streamOutput: true });
+    assert.match(response.headers.get('content-type'), /ndjson/);
+    const found = [];
+    let buffer = '';
+    for await (const bytes of response.body) {
+      buffer += Buffer.from(bytes).toString('utf8');
+      for (;;) {
+        const end = buffer.indexOf('\n');
+        if (end < 0) break;
+        found.push(JSON.parse(buffer.slice(0, end)));
+        buffer = buffer.slice(end + 1);
+      }
+    }
+    assert.equal(buffer, '');
+    return found;
+  }
+  const success = await events();
+  assert.equal(observed.stream, true);
+  assert.equal(observed.stream_options.include_usage, true);
+  assert.deepEqual(success.map((event) => event.type), ['start', 'delta', 'delta', 'delta', 'result']);
+  assert.equal(success.at(-1).source, source);
+  assert.equal(success.at(-1).usage.total_tokens, 12);
+  finishReason = 'length';
+  const failed = await events();
+  assert.equal(failed.at(-1).type, 'error');
+  assert.equal(failed.at(-1).code, 'incomplete');
+  assert.equal(failed.at(-1).details.output.text, source);
+  assert.equal(failed.at(-1).details.reasoning.text, 'thinking so far');
+  assert.equal(failed.at(-1).details.finishReason, 'length');
 });

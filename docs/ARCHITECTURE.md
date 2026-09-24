@@ -49,7 +49,7 @@ UIは完全なコードを受け取ってから候補Workerを作成します。
 | `PUT /api/settings`  | 設定一式、任意のapiKey                      | 検証・保存した設定。apiKey空文字は削除                     |
 | `POST /api/models`   | `{}`                                        | 上流のモデル一覧                                           |
 | `POST /api/test`     | `{}` またはPNG data URLのimage              | 短い応答、時間、使用トークン、画像確認結果                 |
-| `POST /api/generate` | prompt、seed、任意のsource / images / error | 完全なsource、モデル名、時間、使用トークン                 |
+| `POST /api/generate` | prompt、seed、任意のsource / images / error / streamOutput | 通常は完全なsourceをJSONで返す。streamOutput時は生成差分と結果・エラーをNDJSONで返す |
 | `POST /api/cancel`   | `{}`                                        | 進行中の上流リクエストを中止                               |
 
 エラーはJSONの `error` と `code` で返します。認証・レート制限・通信・タイムアウト・形式・未完了・実行契約の違反を区別します。完全な契約違反ソースは、1回の修復のため `details.rejectedSource` に返すことがあります。プロバイダーのreasoning本文はUIへ返しません。

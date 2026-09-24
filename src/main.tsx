@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { defaults } from '../shared/config.mjs';
+import { textExcerpt } from '../shared/diagnostics.mjs';
 import { calibrationSource } from '../tests/fixtures/calibration.js';
 import { RuntimeClient } from './runtime';
 import { download, readProject, saveProject } from './project';
@@ -26,6 +27,25 @@ const phaseText: Record<Phase, string> = {
   capturing: '3方向の画像を撮影中',
   loading: 'プレビューを準備中',
 };
+type TextPreview = NonNullable<ReturnType<typeof textExcerpt>>;
+type GenerationTrace = {
+  attempt: number;
+  stage: string;
+  status: 'running' | 'failed' | 'done' | 'stopped';
+  output: TextPreview | null;
+  reasoning: TextPreview | null;
+  error?: string;
+  code?: string;
+  httpStatus?: number;
+  finishReason?: string;
+  elapsedMs?: number;
+  totalTokens?: number;
+};
+function appendPreview(preview: TextPreview | null, delta: string): TextPreview {
+  const length = (preview?.length || 0) + delta.length;
+  const text = (preview?.text || '') + delta;
+  return { text: text.slice(-120000), length, truncated: length > 120000 };
+}
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
     cube: (
@@ -96,6 +116,8 @@ function App() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [generationTraces, setGenerationTraces] = useState<GenerationTrace[]>([]);
+  const tracePanel = useRef<HTMLDetailsElement>(null);
   const [elapsed, setElapsed] = useState(0);
   const startTime = useRef(0);
   const [history, setHistory] = useState<Version[]>([]);
@@ -144,6 +166,11 @@ function App() {
     );
     return () => clearInterval(id);
   }, [busy]);
+  useEffect(() => {
+    if (!tracePanel.current?.open) return;
+    for (const pre of tracePanel.current.querySelectorAll('pre'))
+      if (pre.dataset.follow !== 'false') pre.scrollTop = pre.scrollHeight;
+  }, [generationTraces]);
 
   async function api(path: string, body: unknown, signal?: AbortSignal, method = 'POST') {
     const res = await fetch('/api/' + path, {
@@ -157,8 +184,72 @@ function App() {
       throw Object.assign(new Error(data.error || 'API通信に失敗しました。'), {
         code: data.code,
         details: data.details,
+        httpStatus: res.status,
       });
     return data;
+  }
+  async function generateApi(
+    body: unknown,
+    signal: AbortSignal,
+    onDelta: (channel: 'output' | 'reasoning', value: string) => void,
+  ) {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': token.current },
+      body: JSON.stringify({ ...(body as object), streamOutput: true }),
+      signal,
+    });
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (!res.ok)
+        throw Object.assign(new Error(data.error || 'API通信に失敗しました。'), {
+          code: data.code,
+          details: data.details,
+          httpStatus: res.status,
+        });
+      return data;
+    }
+    if (!res.ok || !res.body) throw new Error('生成ストリームを受信できませんでした。');
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let result: any;
+    function event(line: string) {
+      if (!line.trim()) return;
+      const data = JSON.parse(line);
+      if (data.type === 'delta' && typeof data.text === 'string')
+        onDelta(data.channel, data.text);
+      if (data.type === 'result') result = data;
+      if (data.type === 'error')
+        throw Object.assign(new Error(data.error || '生成に失敗しました。'), {
+          code: data.code,
+          details: data.details,
+          httpStatus: data.status,
+        });
+    }
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        for (;;) {
+          const end = buffer.indexOf('\n');
+          if (end < 0) break;
+          event(buffer.slice(0, end));
+          buffer = buffer.slice(end + 1);
+        }
+      }
+      buffer += decoder.decode();
+      if (buffer.trim()) event(buffer);
+    } catch (error) {
+      await reader.cancel().catch(() => {});
+      throw error;
+    } finally {
+      reader.releaseLock();
+    }
+    if (!result) throw new Error('生成ストリームが途中で終了しました。');
+    return result;
   }
   function begin(next: Phase) {
     if (busyRef.current) throw new Error('別の処理を実行中です。');
@@ -237,7 +328,7 @@ function App() {
         setModels(data.models);
         if (!data.models.length) throw new Error('モデル一覧が空です。');
         if (!config.model || !data.models.includes(config.model)) {
-          config = { ...config, model: data.models[0] };
+          config = { ...config, model: data.models[0], reasoningEffort: 'default' };
           const d = await api('settings', config, controller.current!.signal, 'PUT');
           setSettings(d.settings);
           setVision(d.vision);
@@ -327,11 +418,20 @@ function App() {
       return;
     }
     const id = begin('generating');
+    const traces: GenerationTrace[] = [];
+    setGenerationTraces([]);
+    let stage = '設定の保存';
+    const updateTrace = (patch: Partial<GenerationTrace>) => {
+      const last = traces.length - 1;
+      traces[last] = { ...traces[last], ...patch };
+      setGenerationTraces([...traces]);
+    };
     try {
       const config = await applySettings(controller.current!.signal);
       valid(id);
       let images: string[] = reference ? [reference] : [];
       if (revise && visual && active.current) {
+        stage = 'プレビュー画像の取得';
         setPhase('capturing');
         images = [...images, ...(await active.current.call<string[]>('capture'))];
         valid(id);
@@ -343,16 +443,44 @@ function App() {
       const usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
       const modelSeed = revise && current ? current.seed : seed;
       for (let attempt = 0; attempt <= (autoRepair ? 1 : 0); attempt++) {
+        stage = 'API応答';
         setPhase(attempt ? 'repairing' : 'generating');
+        traces.push({
+          attempt: attempt + 1,
+          stage: '生成中',
+          status: 'running',
+          output: null,
+          reasoning: null,
+        });
+        setGenerationTraces([...traces]);
         let result;
         try {
-          result = await api(
-            'generate',
+          result = await generateApi(
             { prompt, source, images, error: repairError, seed: modelSeed },
             controller.current!.signal,
+            (channel, value) => {
+              if (id !== operation.current || controller.current?.signal.aborted) return;
+              const trace = traces[traces.length - 1];
+              updateTrace({
+                [channel]: appendPreview(trace[channel], value),
+              });
+            },
           );
         } catch (e: any) {
           valid(id);
+          const details = e.details || {};
+          updateTrace({
+            stage: 'API応答',
+            status: 'failed',
+            error: e.message,
+            code: e.code,
+            httpStatus: e.httpStatus,
+            finishReason: details.finishReason,
+            elapsedMs: details.elapsedMs,
+            totalTokens: details.usage?.total_tokens,
+            output: details.output ?? traces[traces.length - 1].output,
+            reasoning: details.reasoning ?? traces[traces.length - 1].reasoning,
+          });
           if (
             e.code !== 'contract' ||
             !e.details?.rejectedSource ||
@@ -369,9 +497,17 @@ function App() {
         }
         valid(id);
         source = result.source;
+        updateTrace({
+          stage: '生成コードを検証中',
+          output: traces[traces.length - 1].output ?? textExcerpt(source),
+          elapsedMs: result.elapsedMs,
+          totalTokens: result.usage?.total_tokens,
+          finishReason: 'stop',
+        });
         totalMs += result.elapsedMs;
         for (const k of ['prompt_tokens', 'completion_tokens', 'total_tokens'] as const)
           usage[k] += result.usage?.[k] || 0;
+        stage = 'モデル構築・GLB検証';
         setPhase('validating');
         try {
           const prepared = await prepare(source!, modelSeed, config, id);
@@ -401,15 +537,30 @@ function App() {
                 ? 'プレビューを更新しました。GLB互換性のメッセージを確認してください。'
                 : 'モデルを生成しました。GLBの保存と再読込も確認済みです。',
           );
+          updateTrace({ stage: '完成', status: 'done' });
           return;
         } catch (e: any) {
           valid(id);
+          updateTrace({ stage, status: 'failed', error: e.message });
           if (attempt >= (autoRepair ? 1 : 0)) throw e;
           repaired = true;
           repairError = String(e.message).slice(0, 4000);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (traces.length === 0 && e.name !== 'AbortError') {
+        traces.push({
+          attempt: 0,
+          stage,
+          status: 'failed',
+          output: null,
+          reasoning: null,
+          error: e.message,
+          code: e.code,
+          httpStatus: e.httpStatus,
+        });
+        setGenerationTraces([...traces]);
+      }
       report(e, id);
     } finally {
       finish(id);
@@ -512,6 +663,11 @@ function App() {
       active.current?.destroy();
       active.current = null;
     }
+    setGenerationTraces((items) =>
+      items.map((item) =>
+        item.status === 'running' ? { ...item, status: 'stopped', stage: '停止' } : item,
+      ),
+    );
     setNotice('停止しています…');
     try {
       await api('cancel', {});
@@ -706,6 +862,59 @@ function App() {
                 {notice}
               </div>
             )}
+            {generationTraces.length > 0 && (
+              <details className="generation-trace" ref={tracePanel}>
+                <summary>
+                  生成の詳細
+                  <span>
+                    {generationTraces.length}回の試行 ·{' '}
+                    {generationTraces.at(-1)?.status === 'running' ? '受信中' : '記録済み'}
+                  </span>
+                </summary>
+                <p>生成中の出力と失敗箇所を表示します。最後に受信した内容は次の生成まで残ります。</p>
+                {generationTraces.map((trace) => (
+                  <div className="trace-attempt" key={trace.attempt}>
+                    <div className="trace-heading">
+                      <strong>{trace.attempt ? `試行 ${trace.attempt}` : '準備'}</strong>
+                      <span className={`trace-${trace.status}`}>{trace.stage}</span>
+                    </div>
+                    {trace.error && <p className="trace-error">{trace.error}</p>}
+                    {(trace.code || trace.httpStatus || trace.finishReason || trace.elapsedMs || trace.totalTokens) && (
+                      <p className="trace-meta">
+                        {[
+                          trace.code && `分類: ${trace.code}`,
+                          trace.httpStatus && `HTTP ${trace.httpStatus}`,
+                          trace.finishReason && `終了理由: ${trace.finishReason}`,
+                          trace.elapsedMs && `API: ${(trace.elapsedMs / 1000).toFixed(1)}秒`,
+                          trace.totalTokens && `トークン: ${trace.totalTokens.toLocaleString()}`,
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                    {trace.output?.text && (
+                      <div className="trace-text">
+                        <b>生成テキスト{trace.output.truncated ? '（一部を表示）' : ''}</b>
+                        <pre onScroll={(e) => {
+                          const pre = e.currentTarget;
+                          pre.dataset.follow = String(pre.scrollHeight - pre.scrollTop - pre.clientHeight < 80);
+                        }}>{trace.output.text}</pre>
+                      </div>
+                    )}
+                    {trace.reasoning?.text && (
+                      <div className="trace-text">
+                        <b>推論テキスト{trace.reasoning.truncated ? '（一部を表示）' : ''}</b>
+                        <pre onScroll={(e) => {
+                          const pre = e.currentTarget;
+                          pre.dataset.follow = String(pre.scrollHeight - pre.scrollTop - pre.clientHeight < 80);
+                        }}>{trace.reasoning.text}</pre>
+                      </div>
+                    )}
+                    {!trace.output?.text && !trace.reasoning?.text && (
+                      <p className="trace-empty">受信済みの生成テキストはありません。</p>
+                    )}
+                  </div>
+                ))}
+              </details>
+            )}
             {history.length > 0 && (
               <div className="history">
                 <div className="history-heading">
@@ -773,6 +982,20 @@ function App() {
                   <option value={m} key={m} />
                 ))}
               </datalist>
+              <label>
+                Reasoning effort
+                <select
+                  value={settings.reasoningEffort}
+                  onChange={(e) => changeSetting('reasoningEffort', e.target.value)}
+                >
+                  <option value="default">API既定・指定しない</option>
+                  <option value="none">none（対応サーバーのみ）</option>
+                  <option value="low">low</option>
+                  <option value="medium">medium</option>
+                  <option value="xhigh">xhigh</option>
+                </select>
+              </label>
+              <p className="field-note">Qwen3.8 / vLLM向け。生成時に選択値を送信します。noneの対応は推論先次第です。</p>
               <label>
                 API Key <span className="optional">任意 · セッション中のみ保持</span>
                 <input
@@ -849,16 +1072,6 @@ function App() {
                         )
                       }
                     />
-                  </label>
-                  <label>
-                    Reasoning
-                    <select
-                      value={settings.reasoningEffort}
-                      onChange={(e) => changeSetting('reasoningEffort', e.target.value)}
-                    >
-                      <option value="low">low（指定WSで検証済み）</option>
-                      <option value="default">API既定・指定しない</option>
-                    </select>
                   </label>
                 </div>
                 <p className="field-note">

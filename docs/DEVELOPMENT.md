@@ -26,6 +26,21 @@ npm run test:e2e
 
 インストール済みGoogle Chromeを使います。推論APIはモックし、校正GLB・テクスチャ、プロジェクト復元、履歴、修復、失敗時保持、Worker無限ループ、停止、通信 / ストレージ拒否、素材警告、リソース制限、狭い画面を確認します。E2Eは接続設定を変更するため、通常利用や実WS評価と同時に実行しないでください。
 
+行指定修復の再現可能な試験では、偽の推論APIが「重複行を含む実行エラーのコード → 指定行だけを変える編集」を返します。保存ソースとGLB検証、不一致編集の拒否を確認します。
+
+```sh
+npm run test:e2e -- tests/browser/line-scoped-repair.spec.ts
+```
+
+実モデルを使う追加試験では、初回生成だけを意図的に壊れた3Dコードへ差し替え、修復要求は指定したAPIへ送ります。モデルIDは `/models` から取得します（PowerShell）。
+
+```powershell
+$env:LIVE_REPAIR_BASE_URL='http://127.0.0.1:8080/v1'
+npm run test:e2e -- tests/browser/line-scoped-repair.live.spec.ts
+```
+
+この試験はモデルが `edits` 形式で応答し、修復後のGLB検証とプロジェクト保存が通ることを確認します。環境変数を指定しない通常のE2E実行ではスキップします。
+
 保存設定を変更しない専用サーバーを起動する場合:
 
 ```sh

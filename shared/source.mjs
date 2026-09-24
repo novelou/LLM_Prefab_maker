@@ -17,6 +17,70 @@ export function extractSource(content, finishReason) {
     throw Object.assign(new Error('コードが500KBの上限を超えました。'), { code: 'budget' });
   return source;
 }
+export function numberedSource(source) {
+  return source
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line, index) => `${index + 1}|${line}`)
+    .join('\n');
+}
+
+function patchError(message) {
+  return Object.assign(new Error(message), { code: 'patch' });
+}
+
+export function extractRepairSource(content, finishReason, original) {
+  if (finishReason !== 'stop') return extractSource(content, finishReason);
+  if (typeof content !== 'string' || !content.trim()) return extractSource(content, finishReason);
+  const response = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  const fenced = /^```(?:json)?\s*\n([\s\S]*?)```$/.exec(response);
+  const body = (fenced ? fenced[1] : response).trim();
+  // A raw full-source response remains a fallback for models that cannot emit edits.
+  if (!body.startsWith('{') && !body.startsWith('[')) return extractSource(content, finishReason);
+  let patch;
+  try {
+    patch = JSON.parse(body);
+  } catch {
+    throw patchError('修復編集のJSON形式が不正です。');
+  }
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch))
+    throw patchError('修復編集の形式が不正です。');
+  if (patch.mode === 'source') return extractSource(patch.source, finishReason);
+  if (
+    patch.mode !== 'edits' ||
+    !Array.isArray(patch.edits) ||
+    !patch.edits.length ||
+    patch.edits.length > 32
+  )
+    throw patchError('修復編集は1～32件のeditsを指定してください。');
+
+  const lines = original.replace(/\r\n?/g, '\n').split('\n');
+  const edits = patch.edits.map((edit) => {
+    if (
+      !edit ||
+      !Number.isSafeInteger(edit.startLine) ||
+      edit.startLine < 1 ||
+      typeof edit.old !== 'string' ||
+      !edit.old ||
+      typeof edit.new !== 'string' ||
+      /\r/.test(edit.old + edit.new) ||
+      edit.old.endsWith('\n')
+    )
+      throw patchError('修復編集の行番号またはold/newが不正です。');
+    const start = edit.startLine - 1;
+    const oldLines = edit.old.split('\n');
+    const end = start + oldLines.length;
+    if (end > lines.length || lines.slice(start, end).join('\n') !== edit.old)
+      throw patchError(`修復編集の${edit.startLine}行目が元コードと一致しません。`);
+    return { start, end, replacement: edit.new === '' ? [] : edit.new.split('\n') };
+  });
+  edits.sort((a, b) => a.start - b.start);
+  for (let i = 1; i < edits.length; i++)
+    if (edits[i].start < edits[i - 1].end) throw patchError('修復編集の行範囲が重複しています。');
+  for (const edit of edits.reverse())
+    lines.splice(edit.start, edit.end - edit.start, ...edit.replacement);
+  return extractSource(lines.join('\n'), finishReason);
+}
 export function executableSource(source) {
   return source
     .replace(/\bexport\s+default\s+(?=(?:async\s+)?function\s+createModel)/g, '')

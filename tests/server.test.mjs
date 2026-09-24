@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { startServer } from '../server/index.mjs';
 import { defaults, normalizeBaseUrl, validateSettings } from '../shared/config.mjs';
-import { extractSource, executableSource } from '../shared/source.mjs';
+import {
+  extractRepairSource,
+  extractSource,
+  executableSource,
+  numberedSource,
+} from '../shared/source.mjs';
+import { messagesFor } from '../server/prompt.mjs';
 const source = 'function createModel({ THREE }) { return { modelRoot: new THREE.Group() }; }';
 test('URL normalization preserves proxy paths and rejects credential URLs', () => {
   assert.equal(normalizeBaseUrl('http://127.0.0.1:8000/'), 'http://127.0.0.1:8000/v1');
@@ -23,6 +29,138 @@ test('only complete source is accepted; no partial execution', () => {
   const arrow = 'export const createModel = ({ THREE }) => ({ modelRoot: new THREE.Group() });';
   assert.equal(extractSource(arrow, 'stop'), arrow);
   assert.equal(executableSource(arrow).startsWith('const createModel'), true);
+});
+
+test('line-scoped repair edits only the requested duplicate and rejects stale ranges', () => {
+  const repeated = [
+    'function createModel({ THREE }) {',
+    '  const modelRoot = new THREE.Group();',
+    "  modelRoot.name = 'same';",
+    "  modelRoot.name = 'same';",
+    '  return { modelRoot };',
+    '}',
+  ].join('\n');
+  assert.match(numberedSource(repeated), /^4\|  modelRoot\.name = 'same';$/m);
+  const patch = (edits) => JSON.stringify({ mode: 'edits', edits });
+  const edit = {
+    startLine: 4,
+    old: "  modelRoot.name = 'same';",
+    new: "  modelRoot.name = 'fixed';",
+  };
+  const repaired = extractRepairSource(patch([edit]), 'stop', repeated);
+  assert.equal(repaired.split('\n')[2], "  modelRoot.name = 'same';");
+  assert.equal(repaired.split('\n')[3], "  modelRoot.name = 'fixed';");
+  assert.throws(() => extractRepairSource(patch([{ ...edit, startLine: 2 }]), 'stop', repeated), {
+    code: 'patch',
+  });
+  assert.throws(() => extractRepairSource(patch([edit, edit]), 'stop', repeated), {
+    code: 'patch',
+  });
+  assert.throws(() => extractRepairSource('[{"mode":"edits"}]', 'stop', repeated), {
+    code: 'patch',
+  });
+  assert.throws(() => extractRepairSource('{"mode":"edits",', 'stop', repeated), {
+    code: 'patch',
+  });
+  const twoEdits = extractRepairSource(
+    patch([
+      {
+        startLine: 4,
+        old: "  modelRoot.name = 'same';",
+        new: "  modelRoot.name = 'fixed';\n  modelRoot.userData.ok = true;",
+      },
+      { startLine: 5, old: '  return { modelRoot };', new: '  return { modelRoot, preview: {} };' },
+    ]),
+    'stop',
+    repeated,
+  );
+  assert.equal(twoEdits.split('\n')[4], '  modelRoot.userData.ok = true;');
+  assert.equal(twoEdits.split('\n')[5], '  return { modelRoot, preview: {} };');
+  assert.throws(() => extractRepairSource(patch([edit]), 'length', repeated), {
+    code: 'incomplete',
+  });
+  assert.equal(
+    extractRepairSource(JSON.stringify({ mode: 'source', source: repeated }), 'stop', repeated),
+    repeated,
+  );
+  assert.equal(extractRepairSource(repeated, 'stop', repeated), repeated);
+  const repairPrompt = messagesFor({
+    prompt: 'a model',
+    source: repeated,
+    error: 'broken',
+    seed: 1,
+  });
+  assert.match(repairPrompt[1].content, /4\|  modelRoot\.name = 'same';/);
+  assert.match(repairPrompt[1].content, /startLine/);
+});
+
+test('repair API materializes line edits before returning source', async (t) => {
+  const original = [
+    'function createModel({ THREE }) {',
+    '  const modelRoot = new THREE.Group();',
+    "  modelRoot.name = 'same';",
+    "  modelRoot.name = 'same';",
+    '  return { modelRoot };',
+    '}',
+  ].join('\n');
+  let observed;
+  const fake = http.createServer(async (req, res) => {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    observed = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                mode: 'edits',
+                edits: [
+                  {
+                    startLine: 4,
+                    old: "  modelRoot.name = 'same';",
+                    new: "  modelRoot.name = 'fixed';",
+                  },
+                ],
+              }),
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+  });
+  await new Promise((resolve) => fake.listen(0, '127.0.0.1', resolve));
+  const app = await startServer({ port: 0, persist: false });
+  t.after(() => {
+    app.closeAllConnections();
+    app.close();
+    fake.closeAllConnections();
+    fake.close();
+  });
+  const base = `http://127.0.0.1:${app.address().port}`;
+  const { token } = await (await fetch(base + '/api/session')).json();
+  const headers = { 'Content-Type': 'application/json', 'X-Session-Token': token };
+  await fetch(base + '/api/settings', {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({
+      ...defaults,
+      baseUrl: `http://127.0.0.1:${fake.address().port}/v1`,
+      model: 'test-qwen',
+    }),
+  });
+  const response = await fetch(base + '/api/generate', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ prompt: 'cube', source: original, error: 'broken', seed: 42 }),
+  });
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.equal(result.source.split('\n')[2], "  modelRoot.name = 'same';");
+  assert.equal(result.source.split('\n')[3], "  modelRoot.name = 'fixed';");
+  assert.match(observed.messages[1].content, /4\|  modelRoot\.name = 'same';/);
 });
 test('local API: auth, origin, settings, errors, concurrency and cancellation', async (t) => {
   let mode = 'ok',

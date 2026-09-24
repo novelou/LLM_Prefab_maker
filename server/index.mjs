@@ -4,7 +4,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { defaults, validateSettings } from '../shared/config.mjs';
-import { extractSource } from '../shared/source.mjs';
+import { extractRepairSource, extractSource } from '../shared/source.mjs';
 import { messagesFor, systemPrompt } from './prompt.mjs';
 import { ApiError, upstream } from './upstream.mjs';
 
@@ -233,13 +233,17 @@ export async function startServer({
           const choice = result.data.choices?.[0];
           let source;
           try {
-            source = extractSource(choice?.message?.content, choice?.finish_reason);
+            source =
+              input.error && input.source
+                ? extractRepairSource(choice?.message?.content, choice?.finish_reason, input.source)
+                : extractSource(choice?.message?.content, choice?.finish_reason);
           } catch (err) {
             err.details = {
               elapsedMs: result.elapsedMs,
               usage: result.data.usage ?? null,
               finishReason: choice?.finish_reason,
               ...(err.code === 'contract' &&
+              !input.error &&
               choice?.finish_reason === 'stop' &&
               typeof choice.message.content === 'string' &&
               choice.message.content.length <= 500000

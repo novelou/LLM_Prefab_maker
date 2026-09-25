@@ -119,6 +119,7 @@ test('line-scoped repair edits only the requested duplicate and rejects stale ra
   });
   assert.match(repairPrompt[1].content, /4\|  modelRoot\.name = 'same';/);
   assert.match(repairPrompt[1].content, /startLine/);
+  assert.match(repairPrompt[1].content, /Prefer the JSON line edits/);
   const revisionPrompt = messagesFor({
     prompt: 'change only the second duplicate',
     source: repeated,
@@ -128,6 +129,14 @@ test('line-scoped repair edits only the requested duplicate and rejects stale ra
   assert.match(revisionPrompt[1].content, /Revise this source/);
   assert.match(revisionPrompt[1].content, /4\|  modelRoot\.name = 'same';/);
   assert.match(revisionPrompt[1].content, /old line did not match/);
+  assert.match(
+    revisionPrompt[1].content,
+    /complete revised JavaScript source as plain text by default/,
+  );
+  assert.match(
+    revisionPrompt[1].content,
+    /Choose line edits only when the change is clearly small/,
+  );
   assert.doesNotMatch(revisionPrompt[1].content, /Error:/);
 });
 
@@ -207,6 +216,14 @@ test('repair and revision APIs materialize line edits before returning source', 
   assert.equal(revised.source, result.source);
   assert.match(observed.messages[1].content, /Revise this source/);
   assert.match(observed.messages[1].content, /change the second duplicate/);
+  modelReply = original.replace("modelRoot.name = 'same'", "modelRoot.name = 'rebuilt'");
+  const fullRevision = await fetch(base + '/api/generate', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ prompt: 'rebuild the model', source: original, seed: 42 }),
+  });
+  assert.equal(fullRevision.status, 200);
+  assert.equal((await fullRevision.json()).source, modelReply);
   modelReply = JSON.stringify({
     mode: 'edits',
     edits: [

@@ -45,7 +45,7 @@ export function extractEditedSource(content, finishReason, original) {
   const fenced = /^```(?:json)?\s*\n([\s\S]*?)```$/.exec(response);
   const body = (fenced ? fenced[1] : response).trim();
   if (!body) throw patchError('部分編集の応答が空です。');
-  // A raw full-source response remains a fallback for models that cannot emit edits.
+  // Full source is the default for revisions and a fallback for error repair.
   if (!body.startsWith('{') && !body.startsWith('[')) {
     try {
       return extractSource(content, finishReason);

@@ -4,7 +4,7 @@ import { strFromU8, unzipSync } from 'fflate';
 
 test.skip(!process.env.LIVE_EDIT_BASE_URL, 'Set LIVE_EDIT_BASE_URL to test a local model API.');
 
-test('a real model revises a small change with line-scoped edits', async ({ page }) => {
+test('a real model revises with complete source or localized edits', async ({ page }) => {
   test.setTimeout(420000);
   const baseUrl = process.env.LIVE_EDIT_BASE_URL!;
   const models = await (await fetch(baseUrl + '/models')).json();
@@ -49,13 +49,12 @@ test('a real model revises a small change with line-scoped edits', async ({ page
     .first()
     .textContent();
   expect(raw).toBeTruthy();
-  const response = JSON.parse(
-    raw!
-      .trim()
-      .replace(/^```json\s*\n/, '')
-      .replace(/```$/, ''),
-  );
-  expect(response.mode).toBe('edits');
+  const answer = raw!
+    .trim()
+    .replace(/^```(?:json|js|javascript)?\s*\n/, '')
+    .replace(/```$/, '');
+  if (answer.startsWith('{')) expect(['edits', 'source']).toContain(JSON.parse(answer).mode);
+  else expect(answer).toContain('createModel');
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),

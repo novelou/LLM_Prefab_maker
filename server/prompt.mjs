@@ -1,6 +1,6 @@
 import { THREE_VERSION, ADDONS } from '../shared/config.mjs';
 import { numberedSource } from '../shared/source.mjs';
-export const systemPrompt = `You are a skilled procedural 3D artist. For generation and revision, return ONLY complete JavaScript source, no prose, no markdown. For error repair, follow the response format in the user message. Use three.js ${THREE_VERSION}.
+export const systemPrompt = `You are a skilled procedural 3D artist. For new generation, return ONLY complete JavaScript source, no prose, no markdown. For revision and error repair, follow the response format in the user message. Use three.js ${THREE_VERSION}.
 Required contract: async function createModel({ THREE, addons, seed }) { ...; return { modelRoot }; }
 modelRoot must be a THREE.Group or Object3D containing the finished static model. Units: meters. Up: +Y. Front: +Z. Put the model on y=0. Name meaningful parts.
 There is NO shape schema: freely use functions, loops, mathematics, custom BufferGeometry, curves, extrusions, lathe surfaces, procedural textures and all THREE APIs. Build rich recognizable silhouettes and details appropriate to the prompt. Deterministic randomness: use seed with your own seeded PRNG.
@@ -16,13 +16,12 @@ VISUAL CONSTRUCTION CHECKLIST:
 - Hollow/open objects must have actual openings and an inner surface with rim thickness when requested. Do not cap vase mouths or lampshade openings. A dark decal is not a hole. Plan the wall thickness and bottom so the intended cavity is real.
 - This is a WORKER: there is no document, window, Image or HTMLCanvasElement. Never use document.createElement, including for textures. Use new OffscreenCanvas(w,h) and its 2D context. No HTML output.
 Complete-source responses must contain the named function createModel({ THREE, addons, seed }) and its return { modelRoot }. Return actual executable JavaScript, not a plan, explanation, HTML document or placeholder.
-When revising, return the FULL revised source and preserve parts the user did not ask to change. Use supplied images as evidence of what is visible; repair occlusion, winding and connections rather than merely renaming parts. When repairing an error, preserve correct parts of the source.
+When revising, preserve parts the user did not ask to change. Use supplied images as evidence of what is visible; repair occlusion, winding and connections rather than merely renaming parts. When repairing an error, preserve correct parts of the source.
 When an asset set, separation members, and a disassembled arrangement are specified, the designated separation and arrangement must be maintained. Rules regarding connections apply only to locations where assembly is required.`;
-export function messagesFor({ prompt, source, images = [], error, seed }) {
-  const repairing = Boolean(error && source);
-  const text = repairing
-    ? `Repair this source. Error: ${error}\nNumbered current source (the number and | are not code):\n${numberedSource(source)}\n\nReturn ONLY a JSON object with {"mode":"edits","edits":[{"startLine":1,"old":"complete original line(s)","new":"replacement line(s)"}]}. Use one-based line numbers. Copy complete old lines exactly, including indentation, without the number and | prefix. Each startLine refers to the original numbered source; repeated old text on other lines is allowed. If a previous edit response failed, its changes were not applied: edit this original source again. Keep edits small and use no more than 32. An empty new string deletes the specified lines. If a small edit cannot fix the error, return {"mode":"source","source":"the full corrected JavaScript source"}. Use JSON string escaping and no markdown fences or explanation.\nSeed: ${seed}\nUser request: ${prompt}`
-    : `${error ? 'Repair this source. Error: ' + error + '\n' : ''}${source ? 'Current source:\n' + source + '\n\n' : ''}Seed: ${seed}\nUser request: ${prompt}`;
+export function messagesFor({ prompt, source, images = [], error, editFeedback, seed }) {
+  const text = source
+    ? `${error ? `Repair this source. Error: ${error}` : 'Revise this source according to the additional user instruction.'}${editFeedback ? `\nPrevious edit response failed; no changes were applied. ${editFeedback}` : ''}\nNumbered current source (the number and | are not code):\n${numberedSource(source)}\n\nReturn ONLY a JSON object with {"mode":"edits","edits":[{"startLine":1,"old":"complete original line(s)","new":"replacement line(s)"}]}. Use one-based line numbers. Copy complete old lines exactly, including indentation, without the number and | prefix. Each startLine refers to the original numbered source; repeated old text on other lines is allowed. Keep edits small and use no more than 32. An empty new string deletes the specified lines. If a small edit cannot satisfy the instruction, return {"mode":"source","source":"the full revised JavaScript source"}. Use JSON string escaping and no markdown fences or explanation.\nSeed: ${seed}\nUser request: ${prompt}`
+    : `Seed: ${seed}\nUser request: ${prompt}`;
   return [
     { role: 'system', content: systemPrompt },
     {

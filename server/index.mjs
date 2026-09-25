@@ -5,7 +5,7 @@ import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { defaults, validateSettings } from '../shared/config.mjs';
 import { textExcerpt } from '../shared/diagnostics.mjs';
-import { extractRepairSource, extractSource } from '../shared/source.mjs';
+import { extractEditedSource, extractSource } from '../shared/source.mjs';
 import { messagesFor, systemPrompt } from './prompt.mjs';
 import { ApiError, upstream, upstreamChatStream } from './upstream.mjs';
 
@@ -196,6 +196,10 @@ export async function startServer({
             input.prompt.length > 16000 ||
             (input.source && (typeof input.source !== 'string' || input.source.length > 500000)) ||
             (input.error && (typeof input.error !== 'string' || input.error.length > 4000)) ||
+            (input.editFeedback &&
+              (typeof input.editFeedback !== 'string' ||
+                input.editFeedback.length > 4000 ||
+                !input.source)) ||
             !Number.isInteger(input.seed) ||
             input.seed < 0 ||
             input.seed > 2147483647
@@ -244,10 +248,9 @@ export async function startServer({
           const choice = result.data.choices?.[0];
           let source;
           try {
-            source =
-              input.error && input.source
-                ? extractRepairSource(choice?.message?.content, choice?.finish_reason, input.source)
-                : extractSource(choice?.message?.content, choice?.finish_reason);
+            source = input.source
+              ? extractEditedSource(choice?.message?.content, choice?.finish_reason, input.source)
+              : extractSource(choice?.message?.content, choice?.finish_reason);
           } catch (err) {
             err.details = {
               elapsedMs: result.elapsedMs,
@@ -258,9 +261,9 @@ export async function startServer({
               ...(err.code === 'contract' &&
               !input.error &&
               choice?.finish_reason === 'stop' &&
-              typeof choice.message.content === 'string' &&
-              choice.message.content.length <= 500000
-                ? { rejectedSource: choice.message.content }
+              typeof (err.rejectedSource ?? choice?.message?.content) === 'string' &&
+              (err.rejectedSource ?? choice.message.content).length <= 500000
+                ? { rejectedSource: err.rejectedSource ?? choice.message.content }
                 : {}),
             };
             throw err;

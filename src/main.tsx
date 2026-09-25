@@ -438,16 +438,17 @@ function App() {
       }
       let source = revise ? current?.source : undefined,
         repairError: string | undefined,
+        editFeedback: string | undefined,
         repaired = false;
       let repairRequested = false;
-      let originalRepairError = '';
       let patchFailures = 0;
       let totalMs = 0;
       const usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
       const modelSeed = revise && current ? current.seed : seed;
-      for (let attempt = 0; attempt <= (autoRepair ? MAX_PATCH_ATTEMPTS : 0); attempt++) {
+      const maxAttempts = (revise ? MAX_PATCH_ATTEMPTS : 1) + (autoRepair ? MAX_PATCH_ATTEMPTS : 0);
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         stage = 'API応答';
-        setPhase(attempt ? 'repairing' : 'generating');
+        setPhase(repairRequested ? 'repairing' : 'generating');
         traces.push({
           attempt: attempt + 1,
           stage: '生成中',
@@ -459,7 +460,7 @@ function App() {
         let result;
         try {
           result = await generateApi(
-            { prompt, source, images, error: repairError, seed: modelSeed },
+            { prompt, source, images, error: repairError, editFeedback, seed: modelSeed },
             controller.current!.signal,
             (channel, value) => {
               if (id !== operation.current || controller.current?.signal.aborted) return;
@@ -484,7 +485,7 @@ function App() {
             output: details.output ?? traces[traces.length - 1].output,
             reasoning: details.reasoning ?? traces[traces.length - 1].reasoning,
           });
-          if (repairRequested && e.code === 'patch') {
+          if (source && e.code === 'patch') {
             patchFailures++;
             totalMs += details.elapsedMs || 0;
             for (const k of ['prompt_tokens', 'completion_tokens', 'total_tokens'] as const)
@@ -497,8 +498,7 @@ function App() {
                 { code: 'patch' },
               );
             const previousOutput = details.output?.text;
-            repairError = [
-              `元のエラー: ${originalRepairError.slice(0, 1200)}`,
+            editFeedback = [
               `前回の編集応答の失敗 (${patchFailures}/${MAX_PATCH_ATTEMPTS}): ${String(e.message).slice(0, 800)}`,
               ...(typeof previousOutput === 'string'
                 ? [`前回の編集応答:\n${previousOutput.slice(0, 1800)}`]
@@ -511,8 +511,9 @@ function App() {
           if (repairRequested || !autoRepair || e.code !== 'contract' || !details.rejectedSource)
             throw e;
           source = e.details.rejectedSource;
-          originalRepairError = String(e.message);
-          repairError = originalRepairError.slice(0, 4000);
+          repairError = String(e.message).slice(0, 4000);
+          editFeedback = undefined;
+          patchFailures = 0;
           repairRequested = true;
           repaired = true;
           totalMs += e.details.elapsedMs || 0;
@@ -569,11 +570,13 @@ function App() {
           updateTrace({ stage, status: 'failed', error: e.message });
           if (repairRequested || !autoRepair) throw e;
           repaired = true;
-          originalRepairError = String(e.message);
-          repairError = originalRepairError.slice(0, 4000);
+          repairError = String(e.message).slice(0, 4000);
+          editFeedback = undefined;
+          patchFailures = 0;
           repairRequested = true;
         }
       }
+      throw new Error('生成の試行回数が上限に達しました。');
     } catch (e: any) {
       if (traces.length === 0 && e.name !== 'AbortError') {
         traces.push({
@@ -853,7 +856,7 @@ function App() {
                   disabled={busy}
                   onChange={(e) => setAutoRepair(e.target.checked)}
                 />
-                実行エラーを1回まで自動修復（編集応答は最大3回試行）
+                実行エラーを1回まで自動修復（部分編集の失敗は別に最大3回試行）
               </label>
             </div>
             <div className={`job-status ${busy ? 'working' : ''}`} role="status">

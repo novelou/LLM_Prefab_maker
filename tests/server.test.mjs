@@ -4,6 +4,7 @@ import http from 'node:http';
 import { startServer } from '../server/index.mjs';
 import { defaults, normalizeBaseUrl, validateSettings } from '../shared/config.mjs';
 import {
+  extractEditedSource,
   extractRepairSource,
   extractSource,
   executableSource,
@@ -68,6 +69,9 @@ test('line-scoped repair edits only the requested duplicate and rejects stale ra
   assert.throws(() => extractRepairSource('not a source or edit', 'stop', repeated), {
     code: 'patch',
   });
+  assert.throws(() => extractEditedSource('{"mode":"source"}', 'stop', repeated), {
+    code: 'patch',
+  });
   const twoEdits = extractRepairSource(
     patch([
       {
@@ -90,6 +94,23 @@ test('line-scoped repair edits only the requested duplicate and rejects stale ra
     repeated,
   );
   assert.equal(extractRepairSource(repeated, 'stop', repeated), repeated);
+  assert.equal(extractEditedSource(patch([edit]), 'stop', repeated), repaired);
+  assert.throws(
+    () =>
+      extractEditedSource(
+        patch([
+          {
+            startLine: 1,
+            old: 'function createModel({ THREE }) {',
+            new: 'function broken({ THREE }) {',
+          },
+        ]),
+        'stop',
+        repeated,
+      ),
+    (error) =>
+      error.code === 'contract' && error.rejectedSource.startsWith('function broken({ THREE }) {'),
+  );
   const repairPrompt = messagesFor({
     prompt: 'a model',
     source: repeated,
@@ -98,9 +119,19 @@ test('line-scoped repair edits only the requested duplicate and rejects stale ra
   });
   assert.match(repairPrompt[1].content, /4\|  modelRoot\.name = 'same';/);
   assert.match(repairPrompt[1].content, /startLine/);
+  const revisionPrompt = messagesFor({
+    prompt: 'change only the second duplicate',
+    source: repeated,
+    editFeedback: 'old line did not match',
+    seed: 1,
+  });
+  assert.match(revisionPrompt[1].content, /Revise this source/);
+  assert.match(revisionPrompt[1].content, /4\|  modelRoot\.name = 'same';/);
+  assert.match(revisionPrompt[1].content, /old line did not match/);
+  assert.doesNotMatch(revisionPrompt[1].content, /Error:/);
 });
 
-test('repair API materializes line edits before returning source', async (t) => {
+test('repair and revision APIs materialize line edits before returning source', async (t) => {
   const original = [
     'function createModel({ THREE }) {',
     '  const modelRoot = new THREE.Group();',
@@ -110,6 +141,16 @@ test('repair API materializes line edits before returning source', async (t) => 
     '}',
   ].join('\n');
   let observed;
+  let modelReply = JSON.stringify({
+    mode: 'edits',
+    edits: [
+      {
+        startLine: 4,
+        old: "  modelRoot.name = 'same';",
+        new: "  modelRoot.name = 'fixed';",
+      },
+    ],
+  });
   const fake = http.createServer(async (req, res) => {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
@@ -119,18 +160,7 @@ test('repair API materializes line edits before returning source', async (t) => 
       JSON.stringify({
         choices: [
           {
-            message: {
-              content: JSON.stringify({
-                mode: 'edits',
-                edits: [
-                  {
-                    startLine: 4,
-                    old: "  modelRoot.name = 'same';",
-                    new: "  modelRoot.name = 'fixed';",
-                  },
-                ],
-              }),
-            },
+            message: { content: modelReply },
             finish_reason: 'stop',
           },
         ],
@@ -167,6 +197,35 @@ test('repair API materializes line edits before returning source', async (t) => 
   assert.equal(result.source.split('\n')[2], "  modelRoot.name = 'same';");
   assert.equal(result.source.split('\n')[3], "  modelRoot.name = 'fixed';");
   assert.match(observed.messages[1].content, /4\|  modelRoot\.name = 'same';/);
+  const revision = await fetch(base + '/api/generate', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ prompt: 'change the second duplicate', source: original, seed: 42 }),
+  });
+  assert.equal(revision.status, 200);
+  const revised = await revision.json();
+  assert.equal(revised.source, result.source);
+  assert.match(observed.messages[1].content, /Revise this source/);
+  assert.match(observed.messages[1].content, /change the second duplicate/);
+  modelReply = JSON.stringify({
+    mode: 'edits',
+    edits: [
+      {
+        startLine: 1,
+        old: 'function createModel({ THREE }) {',
+        new: 'function broken({ THREE }) {',
+      },
+    ],
+  });
+  const invalid = await fetch(base + '/api/generate', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ prompt: 'change the function', source: original, seed: 42 }),
+  });
+  assert.equal(invalid.status, 400);
+  const failure = await invalid.json();
+  assert.equal(failure.code, 'contract');
+  assert.equal(failure.details.rejectedSource, original.replace('createModel', 'broken'));
 });
 test('selected reasoning effort reaches generation requests', async (t) => {
   let observed;

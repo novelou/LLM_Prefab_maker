@@ -4,7 +4,7 @@
 
 A local three.js modeling studio powered by an OpenAI-compatible LLM server. Generate JavaScript models, inspect them in 3D, revise them, and export GLB. Japanese UI. MIT licensed.
 
-React / TypeScript / three.js / Node.js · **v1.0.0**
+React / TypeScript / three.js / Node.js · **v1.0.1**
 
 ![Qwenが生成した緑の卓上ランプを表示したアプリ](docs/images/studio.png)
 
@@ -13,7 +13,7 @@ React / TypeScript / three.js / Node.js · **v1.0.0**
 ## できること
 
 - 自然文と参照画像からthree.jsコードを生成し、3Dプレビューで確認。
-- 追加指示による修正、正面・側面・斜めの画像を添付する修正、履歴20版と「ひとつ戻す」。
+- 追加指示による修正（小さな変更は行指定の部分編集で応答を短縮、その他はソース全文で修正）、正面・側面・斜めの画像を添付する修正、履歴20版と「ひとつ戻す」。
 - 回転・移動・ズーム、正面／側面／上面、グリッド・ワイヤーフレーム。
 - GLBの保存と自動再読込検査、ソース・履歴を含む `.qmodel` の保存・復元。
 - API設定、接続・画像入力の簡易テスト、停止、最大1回の自動修復。修復時は元コードの行を照合して部分編集し、編集形式が不正な場合は最大3回試します。

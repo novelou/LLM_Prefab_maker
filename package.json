@@ -1,6 +1,6 @@
 {
   "name": "qwen-model-studio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local three.js model generation, preview and GLB export with an OpenAI-compatible Qwen server",
   "license": "MIT",
   "engines": {

@@ -78,7 +78,7 @@ npm run release:check
 npm run release:source
 ```
 
-`release:check` は公開対象の明示リスト、ローカル文書リンク、代表的な秘密情報パターン、package.jsonとlockfileの整合性を確認します。`release:source` は同じ確認後、`release/qwen-model-studio-0.1.0-source.zip` とSHA-256、ファイル一覧を作ります。
+`release:check` は公開対象の明示リスト、ローカル文書リンク、代表的な秘密情報パターン、package.jsonとlockfileの整合性を確認します。`release:source` は同じ確認後、`release/qwen-model-studio-1.0.1-source.zip` とSHA-256、ファイル一覧を作ります。
 
 アーカイブにはソース、文書、テスト、lockfile、MITと第三者通知を含めます。`.local`、`.env`、node_modules、dist、生成作品、テスト出力、開発中の一時スクリプトは含めません。生成ZIPを展開した後は `npm ci` で依存を取得してください。ブラウザ・Blender・モデルのバイナリは配布しません。
 
